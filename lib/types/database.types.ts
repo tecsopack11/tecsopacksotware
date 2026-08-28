@@ -629,7 +629,7 @@ export type Database = {
       material_type: "resina" | "masterbatch" | "aditivo" | "otro"
       movement_type: "entrada" | "salida" | "traslado" | "consumo" | "ajuste"
       shift_status: "abierto" | "cerrado"
-      uom: "kg" | "g" | "ton" | "bulto" | "unidad"
+      uom: "kg" | "g" | "ton" | "bulto" | "unidad" | "cuñete"
       user_role: "operario" | "supervisor" | "admin"
     }
     CompositeTypes: {
@@ -762,7 +762,7 @@ export const Constants = {
       material_type: ["resina", "masterbatch", "aditivo", "otro"],
       movement_type: ["entrada", "salida", "traslado", "consumo", "ajuste"],
       shift_status: ["abierto", "cerrado"],
-      uom: ["kg", "g", "ton", "bulto", "unidad"],
+      uom: ["kg", "g", "ton", "bulto", "unidad", "cuñete"],
       user_role: ["operario", "supervisor", "admin"],
     },
   },

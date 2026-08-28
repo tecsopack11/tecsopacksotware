@@ -10,7 +10,7 @@ const materialSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
   material_type: z.enum(["resina", "masterbatch", "aditivo", "otro"]),
-  unit_of_measure: z.enum(["kg", "g", "ton", "bulto", "unidad"]),
+  unit_of_measure: z.enum(["kg", "g", "ton", "bulto", "unidad", "cuñete"]),
   min_stock: z.coerce.number().min(0),
 });
 

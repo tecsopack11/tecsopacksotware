@@ -57,7 +57,7 @@ export function MaterialForm() {
             <Select
               name="unit_of_measure"
               defaultValue="kg"
-              items={{ kg: "kg", g: "g", ton: "ton", bulto: "bulto", unidad: "unidad" }}
+              items={{ kg: "kg", g: "g", ton: "ton", bulto: "bulto", unidad: "unidad", "cuñete": "cuñete" }}
             >
               <SelectTrigger id="unit_of_measure">
                 <SelectValue />
@@ -68,6 +68,7 @@ export function MaterialForm() {
                 <SelectItem value="ton">ton</SelectItem>
                 <SelectItem value="bulto">bulto</SelectItem>
                 <SelectItem value="unidad">unidad</SelectItem>
+                <SelectItem value="cuñete">cuñete</SelectItem>
               </SelectContent>
             </Select>
           </div>
