@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/lib/types/database.types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,76 @@ const LOCATION_TYPE_LABEL: Record<string, string> = {
   merma: "Merma",
 };
 
+type MaterialCategory = Database["public"]["Enums"]["material_category"];
+
+const CATEGORY_ORDER: MaterialCategory[] = ["principal", "pigmento", "tinta", "solvente"];
+const CATEGORY_LABEL: Record<MaterialCategory, string> = {
+  principal: "Principales",
+  pigmento: "Pigmentos",
+  tinta: "Tintas",
+  solvente: "Solventes",
+};
+
+// Orden explícito pedido para los materiales principales; cualquier otro
+// material "principal" que se agregue después cae al final, alfabético.
+const PRINCIPAL_ORDER = ["PEAD-01", "CARB-01", "BIO-01", "LINEAL-01", "PEBD-01", "REC-BEIGE", "REC-BLANCO"];
+
+type MaterialRow = {
+  id: string;
+  name: string;
+  code: string;
+  unit_of_measure: string;
+  min_stock: number;
+  category: MaterialCategory;
+};
+
+function MaterialCard({ material, total }: { material: MaterialRow; total: number }) {
+  const status =
+    material.min_stock > 0 && total < material.min_stock
+      ? "bajo"
+      : material.min_stock > 0 && total < material.min_stock * 1.25
+        ? "cerca"
+        : "ok";
+  return (
+    <Card
+      className={cn(
+        "border-2",
+        status === "bajo" && "border-destructive",
+        status === "cerca" && "border-warning",
+        status === "ok" && "border-transparent",
+      )}
+    >
+      <CardHeader className="pb-1">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{material.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div
+          className={cn(
+            "text-2xl font-semibold",
+            status === "bajo" && "text-destructive",
+            status === "cerca" && "text-warning",
+          )}
+        >
+          {total.toLocaleString("es-CO")} {material.unit_of_measure}
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          Mínimo: {material.min_stock.toLocaleString("es-CO")} {material.unit_of_measure}
+        </div>
+        {status === "bajo" && (
+          <Badge variant="destructive" className="mt-2">
+            Pedir / comprar
+          </Badge>
+        )}
+        {status === "cerca" && (
+          <Badge variant="outline" className="mt-2 border-warning text-warning">
+            Cerca del mínimo
+          </Badge>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function InventarioPage() {
   const supabase = await createClient();
 
@@ -24,7 +95,7 @@ export default async function InventarioPage() {
       supabase.from("v_inventory_stock").select("material_id, lot_id, location_id, quantity"),
       supabase
         .from("materials")
-        .select("id, name, code, unit_of_measure, min_stock")
+        .select("id, name, code, unit_of_measure, min_stock, category")
         .eq("active", true)
         .order("name"),
       supabase.from("locations").select("id, name, type"),
@@ -44,6 +115,24 @@ export default async function InventarioPage() {
       row.material_id,
       (totalByMaterial.get(row.material_id) ?? 0) + Number(row.quantity),
     );
+  }
+
+  const materialsByCategory = new Map<MaterialCategory, MaterialRow[]>();
+  for (const m of materials ?? []) {
+    const list = materialsByCategory.get(m.category) ?? [];
+    list.push(m);
+    materialsByCategory.set(m.category, list);
+  }
+  const principales = materialsByCategory.get("principal");
+  if (principales) {
+    principales.sort((a, b) => {
+      const ia = PRINCIPAL_ORDER.indexOf(a.code);
+      const ib = PRINCIPAL_ORDER.indexOf(b.code);
+      if (ia === -1 && ib === -1) return a.name.localeCompare(b.name);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
   }
 
   const rows = (stock ?? [])
@@ -80,56 +169,20 @@ export default async function InventarioPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {(materials ?? []).map((m) => {
-          const total = totalByMaterial.get(m.id) ?? 0;
-          const status =
-            m.min_stock > 0 && total < m.min_stock
-              ? "bajo"
-              : m.min_stock > 0 && total < m.min_stock * 1.25
-                ? "cerca"
-                : "ok";
-          return (
-            <Card
-              key={m.id}
-              className={cn(
-                "border-2",
-                status === "bajo" && "border-destructive",
-                status === "cerca" && "border-warning",
-                status === "ok" && "border-transparent",
-              )}
-            >
-              <CardHeader className="pb-1">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{m.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={cn(
-                    "text-2xl font-semibold",
-                    status === "bajo" && "text-destructive",
-                    status === "cerca" && "text-warning",
-                  )}
-                >
-                  {total.toLocaleString("es-CO")} {m.unit_of_measure}
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Mínimo: {m.min_stock.toLocaleString("es-CO")} {m.unit_of_measure}
-                </div>
-                {status === "bajo" && (
-                  <Badge variant="destructive" className="mt-2">
-                    Pedir / comprar
-                  </Badge>
-                )}
-                {status === "cerca" && (
-                  <Badge variant="outline" className="mt-2 border-warning text-warning">
-                    Cerca del mínimo
-                  </Badge>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {CATEGORY_ORDER.map((category) => {
+        const list = materialsByCategory.get(category);
+        if (!list || list.length === 0) return null;
+        return (
+          <div key={category} className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground">{CATEGORY_LABEL[category]}</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {list.map((m) => (
+                <MaterialCard key={m.id} material={m} total={totalByMaterial.get(m.id) ?? 0} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       <Card>
         <CardHeader>

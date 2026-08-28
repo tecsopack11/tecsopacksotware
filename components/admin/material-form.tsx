@@ -76,6 +76,24 @@ export function MaterialForm() {
             <Label htmlFor="min_stock">Stock mínimo</Label>
             <Input id="min_stock" name="min_stock" type="number" step="0.01" min="0" defaultValue={0} />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoría (casillas de Inventario)</Label>
+            <Select
+              name="category"
+              defaultValue="principal"
+              items={{ principal: "Principales", pigmento: "Pigmentos", tinta: "Tintas", solvente: "Solventes" }}
+            >
+              <SelectTrigger id="category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="principal">Principales</SelectItem>
+                <SelectItem value="pigmento">Pigmentos</SelectItem>
+                <SelectItem value="tinta">Tintas</SelectItem>
+                <SelectItem value="solvente">Solventes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="sm:col-span-2 space-y-2">
             {state.error && (
               <Alert variant="destructive">

@@ -12,6 +12,7 @@ const materialSchema = z.object({
   material_type: z.enum(["resina", "masterbatch", "aditivo", "otro"]),
   unit_of_measure: z.enum(["kg", "g", "ton", "bulto", "unidad", "cuñete"]),
   min_stock: z.coerce.number().min(0),
+  category: z.enum(["principal", "pigmento", "tinta", "solvente"]),
 });
 
 export async function crearMaterial(

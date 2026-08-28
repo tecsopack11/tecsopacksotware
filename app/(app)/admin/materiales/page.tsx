@@ -9,8 +9,16 @@ export default async function MaterialesAdminPage() {
   const supabase = await createClient();
   const { data: materials } = await supabase
     .from("materials")
-    .select("id, code, name, material_type, unit_of_measure, min_stock")
+    .select("id, code, name, material_type, unit_of_measure, min_stock, category")
+    .order("category")
     .order("name");
+
+  const CATEGORY_LABEL: Record<string, string> = {
+    principal: "Principales",
+    pigmento: "Pigmentos",
+    tinta: "Tintas",
+    solvente: "Solventes",
+  };
 
   return (
     <div className="space-y-6">
@@ -25,6 +33,7 @@ export default async function MaterialesAdminPage() {
               <TableRow>
                 <TableHead>Código</TableHead>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Categoría</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Unidad</TableHead>
                 <TableHead className="text-right">Stock mínimo</TableHead>
@@ -35,6 +44,7 @@ export default async function MaterialesAdminPage() {
                 <TableRow key={m.id}>
                   <TableCell>{m.code}</TableCell>
                   <TableCell>{m.name}</TableCell>
+                  <TableCell>{CATEGORY_LABEL[m.category] ?? m.category}</TableCell>
                   <TableCell>{m.material_type}</TableCell>
                   <TableCell>{m.unit_of_measure}</TableCell>
                   <TableCell className="text-right">{m.min_stock}</TableCell>

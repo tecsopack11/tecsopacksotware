@@ -339,6 +339,7 @@ export type Database = {
       materials: {
         Row: {
           active: boolean
+          category: Database["public"]["Enums"]["material_category"]
           code: string
           created_at: string
           created_by: string | null
@@ -350,6 +351,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category?: Database["public"]["Enums"]["material_category"]
           code: string
           created_at?: string
           created_by?: string | null
@@ -361,6 +363,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category?: Database["public"]["Enums"]["material_category"]
           code?: string
           created_at?: string
           created_by?: string | null
@@ -626,6 +629,7 @@ export type Database = {
     }
     Enums: {
       location_type: "bodega" | "piso" | "maquina" | "externo" | "merma"
+      material_category: "principal" | "pigmento" | "tinta" | "solvente"
       material_type: "resina" | "masterbatch" | "aditivo" | "otro"
       movement_type: "entrada" | "salida" | "traslado" | "consumo" | "ajuste"
       shift_status: "abierto" | "cerrado"
@@ -759,6 +763,7 @@ export const Constants = {
   public: {
     Enums: {
       location_type: ["bodega", "piso", "maquina", "externo", "merma"],
+      material_category: ["principal", "pigmento", "tinta", "solvente"],
       material_type: ["resina", "masterbatch", "aditivo", "otro"],
       movement_type: ["entrada", "salida", "traslado", "consumo", "ajuste"],
       shift_status: ["abierto", "cerrado"],
