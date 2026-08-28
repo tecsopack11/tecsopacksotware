@@ -87,7 +87,18 @@ function MaterialCard({ material, total }: { material: MaterialRow; total: numbe
   );
 }
 
-export default async function InventarioPage() {
+function isMaterialCategory(value: string): value is MaterialCategory {
+  return (CATEGORY_ORDER as string[]).includes(value);
+}
+
+export default async function InventarioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
+  const activeCategory = categoria && isMaterialCategory(categoria) ? categoria : null;
+
   const supabase = await createClient();
 
   const [{ data: stock }, { data: materials }, { data: locations }, { data: lots }] =
@@ -143,7 +154,10 @@ export default async function InventarioPage() {
       location: locationById.get(row.location_id!),
       lot: row.lot_id ? lotById.get(row.lot_id) : undefined,
     }))
-    .filter((r) => r.material && r.location);
+    .filter((r) => r.material && r.location)
+    .filter((r) => !activeCategory || r.material!.category === activeCategory);
+
+  const visibleCategories = activeCategory ? [activeCategory] : CATEGORY_ORDER;
 
   return (
     <div className="space-y-6">
@@ -169,7 +183,29 @@ export default async function InventarioPage() {
         </div>
       </div>
 
-      {CATEGORY_ORDER.map((category) => {
+      <div className="flex flex-wrap gap-2">
+        <Button
+          render={<Link href="/inventario" />}
+          nativeButton={false}
+          variant={activeCategory === null ? "secondary" : "outline"}
+          size="sm"
+        >
+          Todos
+        </Button>
+        {CATEGORY_ORDER.map((category) => (
+          <Button
+            key={category}
+            render={<Link href={`/inventario?categoria=${category}`} />}
+            nativeButton={false}
+            variant={activeCategory === category ? "secondary" : "outline"}
+            size="sm"
+          >
+            {CATEGORY_LABEL[category]}
+          </Button>
+        ))}
+      </div>
+
+      {visibleCategories.map((category) => {
         const list = materialsByCategory.get(category);
         if (!list || list.length === 0) return null;
         return (
