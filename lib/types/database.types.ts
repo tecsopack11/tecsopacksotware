@@ -457,6 +457,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_super_admin: boolean
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
@@ -464,6 +465,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id: string
+          is_super_admin?: boolean
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
@@ -471,6 +473,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          is_super_admin?: boolean
           role?: Database["public"]["Enums"]["user_role"]
         }
         Relationships: []
@@ -626,6 +629,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       location_type: "bodega" | "piso" | "maquina" | "externo" | "merma"

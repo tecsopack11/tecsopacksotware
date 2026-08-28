@@ -12,7 +12,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AppShell fullName={session.profile.full_name} role={session.profile.role}>
+    <AppShell
+      fullName={session.profile.full_name}
+      role={session.profile.role}
+      isSuperAdmin={session.profile.is_super_admin}
+    >
       {children}
     </AppShell>
   );

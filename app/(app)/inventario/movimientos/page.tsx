@@ -18,7 +18,7 @@ const MOVEMENT_LABEL: Record<string, string> = {
 export default async function MovimientosPage() {
   const supabase = await createClient();
   const session = await getProfile();
-  const canCancel = session?.profile.role === "supervisor" || session?.profile.role === "admin";
+  const canCancel = session?.profile.is_super_admin === true;
 
   const { data: movements } = await supabase
     .from("inventory_movements")

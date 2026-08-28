@@ -17,6 +17,12 @@ const LOCATION_TYPE_LABEL: Record<string, string> = {
   merma: "Merma",
 };
 
+const LOCATION_TYPE_ORDER = ["bodega", "piso", "maquina", "externo", "merma"];
+
+function isLocationType(value: string): boolean {
+  return LOCATION_TYPE_ORDER.includes(value);
+}
+
 type MaterialCategory = Database["public"]["Enums"]["material_category"];
 
 const CATEGORY_ORDER: MaterialCategory[] = ["principal", "pigmento", "tinta", "solvente"];
@@ -94,10 +100,11 @@ function isMaterialCategory(value: string): value is MaterialCategory {
 export default async function InventarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string }>;
+  searchParams: Promise<{ categoria?: string; ubicacion?: string }>;
 }) {
-  const { categoria } = await searchParams;
+  const { categoria, ubicacion } = await searchParams;
   const activeCategory = categoria && isMaterialCategory(categoria) ? categoria : null;
+  const activeLocationType = ubicacion && isLocationType(ubicacion) ? ubicacion : null;
 
   const supabase = await createClient();
 
@@ -146,6 +153,12 @@ export default async function InventarioPage({
     });
   }
 
+function materialSortKey(material: MaterialRow): number {
+    if (material.category !== "principal") return 0;
+    const idx = PRINCIPAL_ORDER.indexOf(material.code);
+    return idx === -1 ? PRINCIPAL_ORDER.length : idx;
+  }
+
   const rows = (stock ?? [])
     .filter((row) => row.material_id && row.location_id)
     .map((row) => ({
@@ -155,7 +168,17 @@ export default async function InventarioPage({
       lot: row.lot_id ? lotById.get(row.lot_id) : undefined,
     }))
     .filter((r) => r.material && r.location)
-    .filter((r) => !activeCategory || r.material!.category === activeCategory);
+    .filter((r) => !activeCategory || r.material!.category === activeCategory)
+    .filter((r) => !activeLocationType || r.location!.type === activeLocationType)
+    .sort((a, b) => {
+      const catDiff = CATEGORY_ORDER.indexOf(a.material!.category) - CATEGORY_ORDER.indexOf(b.material!.category);
+      if (catDiff !== 0) return catDiff;
+      const materialDiff = materialSortKey(a.material!) - materialSortKey(b.material!);
+      if (materialDiff !== 0) return materialDiff;
+      const nameDiff = a.material!.name.localeCompare(b.material!.name);
+      if (nameDiff !== 0) return nameDiff;
+      return a.location!.name.localeCompare(b.location!.name);
+    });
 
   const visibleCategories = activeCategory ? [activeCategory] : CATEGORY_ORDER;
 
@@ -223,6 +246,31 @@ export default async function InventarioPage({
       <Card>
         <CardHeader>
           <CardTitle>Existencia por ubicación</CardTitle>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              render={<Link href={activeCategory ? `/inventario?categoria=${activeCategory}` : "/inventario"} />}
+              nativeButton={false}
+              variant={activeLocationType === null ? "secondary" : "outline"}
+              size="sm"
+            >
+              Todas las ubicaciones
+            </Button>
+            {LOCATION_TYPE_ORDER.map((type) => (
+              <Button
+                key={type}
+                render={
+                  <Link
+                    href={`/inventario?ubicacion=${type}${activeCategory ? `&categoria=${activeCategory}` : ""}`}
+                  />
+                }
+                nativeButton={false}
+                variant={activeLocationType === type ? "secondary" : "outline"}
+                size="sm"
+              >
+                {LOCATION_TYPE_LABEL[type]}
+              </Button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

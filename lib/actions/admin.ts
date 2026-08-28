@@ -133,3 +133,26 @@ export async function actualizarRol(
   revalidatePath("/admin/usuarios");
   return { error: null };
 }
+
+const superAdminSchema = z.object({
+  profile_id: z.string().uuid(),
+  is_super_admin: z.enum(["true", "false"]),
+});
+
+export async function actualizarSuperAdmin(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = superAdminSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Datos inválidos" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_super_admin: parsed.data.is_super_admin === "true" })
+    .eq("id", parsed.data.profile_id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/usuarios");
+  return { error: null };
+}

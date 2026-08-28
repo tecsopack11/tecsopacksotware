@@ -29,10 +29,12 @@ const ROLE_LABEL: Record<Role, string> = {
 export function AppShell({
   fullName,
   role,
+  isSuperAdmin,
   children,
 }: {
   fullName: string;
   role: Role;
+  isSuperAdmin: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -72,7 +74,10 @@ export function AppShell({
           <div className="flex items-center gap-3">
             <div className="text-right text-sm">
               <div className="font-medium">{fullName || "Usuario"}</div>
-              <Badge variant="secondary">{ROLE_LABEL[role]}</Badge>
+              <div className="flex items-center justify-end gap-1">
+                <Badge variant="secondary">{ROLE_LABEL[role]}</Badge>
+                {isSuperAdmin && <Badge>Super Admin</Badge>}
+              </div>
             </div>
             <form action={signOut}>
               <Button type="submit" variant="outline" size="sm">
