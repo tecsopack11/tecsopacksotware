@@ -23,6 +23,37 @@ function isLocationType(value: string): boolean {
   return LOCATION_TYPE_ORDER.includes(value);
 }
 
+// Agrupa las ubicaciones en dos áreas de planta para el traslado interno:
+// Bodega (almacenamiento) y Proceso (piso de fábrica + máquinas).
+type Area = "bodega" | "proceso";
+const AREA_BY_LOCATION_TYPE: Record<string, Area | undefined> = {
+  bodega: "bodega",
+  piso: "proceso",
+  maquina: "proceso",
+};
+const AREA_ORDER: Area[] = ["bodega", "proceso"];
+const AREA_LABEL: Record<Area, string> = {
+  bodega: "Bodega",
+  proceso: "Proceso",
+};
+
+function isArea(value: string): value is Area {
+  return (AREA_ORDER as string[]).includes(value);
+}
+
+function buildInventarioHref(params: {
+  categoria?: string | null;
+  area?: string | null;
+  ubicacion?: string | null;
+}) {
+  const sp = new URLSearchParams();
+  if (params.categoria) sp.set("categoria", params.categoria);
+  if (params.area) sp.set("area", params.area);
+  if (params.ubicacion) sp.set("ubicacion", params.ubicacion);
+  const qs = sp.toString();
+  return qs ? `/inventario?${qs}` : "/inventario";
+}
+
 type MaterialCategory = Database["public"]["Enums"]["material_category"];
 
 const CATEGORY_ORDER: MaterialCategory[] = ["principal", "pigmento", "tinta", "solvente"];
@@ -100,15 +131,16 @@ function isMaterialCategory(value: string): value is MaterialCategory {
 export default async function InventarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; ubicacion?: string }>;
+  searchParams: Promise<{ categoria?: string; area?: string; ubicacion?: string }>;
 }) {
-  const { categoria, ubicacion } = await searchParams;
+  const { categoria, area, ubicacion } = await searchParams;
   const activeCategory = categoria && isMaterialCategory(categoria) ? categoria : null;
+  const activeArea = area && isArea(area) ? area : null;
   const activeLocationType = ubicacion && isLocationType(ubicacion) ? ubicacion : null;
 
   const supabase = await createClient();
 
-  const [{ data: stock }, { data: materials }, { data: locations }, { data: lots }] =
+  const [{ data: stock }, { data: materials }, { data: locations }, { data: lots }, { data: consumo }] =
     await Promise.all([
       supabase.from("v_inventory_stock").select("material_id, lot_id, location_id, quantity"),
       supabase
@@ -118,11 +150,17 @@ export default async function InventarioPage({
         .order("name"),
       supabase.from("locations").select("id, name, type"),
       supabase.from("material_lots").select("id, lot_code"),
+      supabase.from("v_material_consumo_por_ubicacion").select("material_id, location_id, consumido"),
     ]);
 
   const materialById = new Map((materials ?? []).map((m) => [m.id, m]));
   const locationById = new Map((locations ?? []).map((l) => [l.id, l]));
   const lotById = new Map((lots ?? []).map((l) => [l.id, l]));
+  const consumidoByMaterialLocation = new Map(
+    (consumo ?? [])
+      .filter((c) => c.material_id && c.location_id)
+      .map((c) => [`${c.material_id}-${c.location_id}`, Number(c.consumido)]),
+  );
 
   // Total por material, sumado en TODAS las ubicaciones — base para las casillas
   // de arriba y para decidir si hay que pedir/comprar.
@@ -169,6 +207,7 @@ function materialSortKey(material: MaterialRow): number {
     }))
     .filter((r) => r.material && r.location)
     .filter((r) => !activeCategory || r.material!.category === activeCategory)
+    .filter((r) => !activeArea || AREA_BY_LOCATION_TYPE[r.location!.type] === activeArea)
     .filter((r) => !activeLocationType || r.location!.type === activeLocationType)
     .sort((a, b) => {
       const catDiff = CATEGORY_ORDER.indexOf(a.material!.category) - CATEGORY_ORDER.indexOf(b.material!.category);
@@ -208,7 +247,7 @@ function materialSortKey(material: MaterialRow): number {
 
       <div className="flex flex-wrap gap-2">
         <Button
-          render={<Link href="/inventario" />}
+          render={<Link href={buildInventarioHref({ area: activeArea, ubicacion: activeLocationType })} />}
           nativeButton={false}
           variant={activeCategory === null ? "secondary" : "outline"}
           size="sm"
@@ -218,7 +257,15 @@ function materialSortKey(material: MaterialRow): number {
         {CATEGORY_ORDER.map((category) => (
           <Button
             key={category}
-            render={<Link href={`/inventario?categoria=${category}`} />}
+            render={
+              <Link
+                href={buildInventarioHref({
+                  categoria: category,
+                  area: activeArea,
+                  ubicacion: activeLocationType,
+                })}
+              />
+            }
             nativeButton={false}
             variant={activeCategory === category ? "secondary" : "outline"}
             size="sm"
@@ -248,7 +295,32 @@ function materialSortKey(material: MaterialRow): number {
           <CardTitle>Existencia por ubicación</CardTitle>
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
-              render={<Link href={activeCategory ? `/inventario?categoria=${activeCategory}` : "/inventario"} />}
+              render={<Link href={buildInventarioHref({ categoria: activeCategory })} />}
+              nativeButton={false}
+              variant={activeArea === null ? "secondary" : "outline"}
+              size="sm"
+            >
+              Todas las áreas
+            </Button>
+            {AREA_ORDER.map((a) => (
+              <Button
+                key={a}
+                render={
+                  <Link href={buildInventarioHref({ categoria: activeCategory, area: a })} />
+                }
+                nativeButton={false}
+                variant={activeArea === a ? "secondary" : "outline"}
+                size="sm"
+              >
+                {AREA_LABEL[a]}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              render={
+                <Link href={buildInventarioHref({ categoria: activeCategory, area: activeArea })} />
+              }
               nativeButton={false}
               variant={activeLocationType === null ? "secondary" : "outline"}
               size="sm"
@@ -260,7 +332,11 @@ function materialSortKey(material: MaterialRow): number {
                 key={type}
                 render={
                   <Link
-                    href={`/inventario?ubicacion=${type}${activeCategory ? `&categoria=${activeCategory}` : ""}`}
+                    href={buildInventarioHref({
+                      categoria: activeCategory,
+                      area: activeArea,
+                      ubicacion: type,
+                    })}
                   />
                 }
                 nativeButton={false}
@@ -279,13 +355,14 @@ function materialSortKey(material: MaterialRow): number {
                 <TableHead>Ubicación</TableHead>
                 <TableHead>Material</TableHead>
                 <TableHead>Lote</TableHead>
-                <TableHead className="text-right">Cantidad</TableHead>
+                <TableHead className="text-right">{activeArea === "proceso" ? "En piso" : "Cantidad"}</TableHead>
+                {activeArea === "proceso" && <TableHead className="text-right">Consumido</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={activeArea === "proceso" ? 5 : 4} className="text-center text-muted-foreground">
                     Sin movimientos registrados todavía.
                   </TableCell>
                 </TableRow>
@@ -306,6 +383,14 @@ function materialSortKey(material: MaterialRow): number {
                   <TableCell className="text-right">
                     {Number(row.quantity).toLocaleString("es-CO")} {row.material!.unit_of_measure}
                   </TableCell>
+                  {activeArea === "proceso" && (
+                    <TableCell className="text-right text-muted-foreground">
+                      {(
+                        consumidoByMaterialLocation.get(`${row.material_id}-${row.location_id}`) ?? 0
+                      ).toLocaleString("es-CO")}{" "}
+                      {row.material!.unit_of_measure}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

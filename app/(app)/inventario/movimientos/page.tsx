@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { CancelMovementButton } from "@/components/inventario/cancel-movement-button";
+import { ConfirmReceiptButton } from "@/components/inventario/confirm-receipt-button";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function MovimientosPage() {
   const { data: movements } = await supabase
     .from("inventory_movements")
     .select(
-      "id, movement_type, quantity, created_at, cancelled_at, notes, materials(name, unit_of_measure), from:from_location_id(name), to:to_location_id(name), material_lots(lot_code), profiles!inventory_movements_created_by_fkey(full_name)",
+      "id, movement_type, quantity, created_at, cancelled_at, received_at, notes, materials(name, unit_of_measure), from:from_location_id(name), to:to_location_id(name), material_lots(lot_code), profiles!inventory_movements_created_by_fkey(full_name), received_profile:profiles!inventory_movements_received_by_fkey(full_name)",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -51,41 +52,56 @@ export default async function MovimientosPage() {
                 <TableHead>Destino</TableHead>
                 <TableHead className="text-right">Cantidad</TableHead>
                 <TableHead>Por</TableHead>
+                <TableHead>Recibido por</TableHead>
                 <TableHead>Estado</TableHead>
-                {canCancel && <TableHead />}
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(movements ?? []).map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                    {new Date(m.created_at).toLocaleString("es-CL")}
-                  </TableCell>
-                  <TableCell>{MOVEMENT_LABEL[m.movement_type]}</TableCell>
-                  <TableCell>{m.materials?.name}</TableCell>
-                  <TableCell>{m.material_lots?.lot_code ?? "—"}</TableCell>
-                  <TableCell>{m.from?.name ?? "—"}</TableCell>
-                  <TableCell>{m.to?.name ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    {Number(m.quantity).toLocaleString("es-CL")} {m.materials?.unit_of_measure}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {m.profiles?.full_name || "—"}
-                  </TableCell>
-                  <TableCell>
-                    {m.cancelled_at ? (
-                      <Badge variant="destructive">Cancelado</Badge>
-                    ) : (
-                      <Badge variant="secondary">Activo</Badge>
-                    )}
-                  </TableCell>
-                  {canCancel && (
-                    <TableCell>
-                      {!m.cancelled_at && <CancelMovementButton movementId={m.id} />}
+              {(movements ?? []).map((m) => {
+                const pendingReceipt =
+                  m.movement_type === "traslado" && !m.cancelled_at && !m.received_at;
+                return (
+                  <TableRow key={m.id}>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      {new Date(m.created_at).toLocaleString("es-CL")}
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                    <TableCell>{MOVEMENT_LABEL[m.movement_type]}</TableCell>
+                    <TableCell>{m.materials?.name}</TableCell>
+                    <TableCell>{m.material_lots?.lot_code ?? "—"}</TableCell>
+                    <TableCell>{m.from?.name ?? "—"}</TableCell>
+                    <TableCell>{m.to?.name ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      {Number(m.quantity).toLocaleString("es-CL")} {m.materials?.unit_of_measure}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {m.profiles?.full_name || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {m.received_profile?.full_name || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {m.cancelled_at ? (
+                        <Badge variant="destructive">Cancelado</Badge>
+                      ) : pendingReceipt ? (
+                        <Badge variant="outline" className="border-warning text-warning">
+                          Pendiente de recepción
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Activo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        {pendingReceipt && <ConfirmReceiptButton movementId={m.id} />}
+                        {canCancel && !m.cancelled_at && (
+                          <CancelMovementButton movementId={m.id} />
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

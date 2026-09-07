@@ -1,0 +1,91 @@
+import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/auth/get-profile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { CancelProductMovementButton } from "@/components/inventario-pt/cancel-product-movement-button";
+
+export const dynamic = "force-dynamic";
+
+const MOVEMENT_LABEL: Record<string, string> = {
+  entrada: "Entrada",
+  salida: "Salida",
+  ajuste: "Ajuste",
+};
+
+export default async function MovimientosPTPage() {
+  const supabase = await createClient();
+  const session = await getProfile();
+  const canCancel = session?.profile.is_super_admin === true;
+
+  const { data: movements } = await supabase
+    .from("product_movements")
+    .select(
+      "id, movement_type, quantity, created_at, cancelled_at, notes, products(name, unit_of_measure), from:from_location_id(name), to:to_location_id(name), profiles!product_movements_created_by_fkey(full_name)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Historial de movimientos — Producto terminado</h1>
+        <p className="text-muted-foreground">Últimos 200 movimientos registrados.</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Movimientos</CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Producto</TableHead>
+                <TableHead>Origen</TableHead>
+                <TableHead>Destino</TableHead>
+                <TableHead className="text-right">Cantidad</TableHead>
+                <TableHead>Por</TableHead>
+                <TableHead>Estado</TableHead>
+                {canCancel && <TableHead />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(movements ?? []).map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    {new Date(m.created_at).toLocaleString("es-CL")}
+                  </TableCell>
+                  <TableCell>{MOVEMENT_LABEL[m.movement_type]}</TableCell>
+                  <TableCell>{m.products?.name}</TableCell>
+                  <TableCell>{m.from?.name ?? "—"}</TableCell>
+                  <TableCell>{m.to?.name ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    {Number(m.quantity).toLocaleString("es-CL")} {m.products?.unit_of_measure}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {m.profiles?.full_name || "—"}
+                  </TableCell>
+                  <TableCell>
+                    {m.cancelled_at ? (
+                      <Badge variant="destructive">Cancelado</Badge>
+                    ) : (
+                      <Badge variant="secondary">Activo</Badge>
+                    )}
+                  </TableCell>
+                  {canCancel && (
+                    <TableCell>
+                      {!m.cancelled_at && <CancelProductMovementButton movementId={m.id} />}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

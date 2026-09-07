@@ -37,6 +37,35 @@ export async function crearMaterial(
   return { error: null };
 }
 
+const productSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  unit_of_measure: z.enum(["kg", "g", "ton", "bulto", "unidad", "cuñete"]),
+  min_stock: z.coerce.number().min(0),
+});
+
+export async function crearProducto(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = productSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión no válida." };
+
+  const { error } = await supabase
+    .from("products")
+    .insert({ ...parsed.data, created_by: user.id });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/productos");
+  return { error: null };
+}
+
 const machineSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),

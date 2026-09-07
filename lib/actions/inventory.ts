@@ -88,6 +88,7 @@ const salidaSchema = z.object({
   from_location_id: z.string().uuid(),
   to_location_id: z.string().uuid().optional().or(z.literal("")),
   notes: z.string().optional(),
+  redirect_to: z.enum(["/inventario", "/planta"]).optional(),
 });
 
 export async function crearSalidaTraslado(
@@ -120,8 +121,10 @@ export async function crearSalidaTraslado(
     return { error: error.message };
   }
 
+  const destination = input.redirect_to ?? "/inventario";
   revalidatePath("/inventario");
-  redirect("/inventario");
+  revalidatePath("/planta");
+  redirect(destination);
 }
 
 const cancelSchema = z.object({
@@ -158,5 +161,42 @@ export async function cancelarMovimiento(
   }
 
   revalidatePath("/inventario/movimientos");
+  return { error: null };
+}
+
+const confirmReceiptSchema = z.object({
+  movement_id: z.string().uuid(),
+});
+
+export async function confirmarRecepcion(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = confirmReceiptSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesión no válida." };
+
+  const { error } = await supabase
+    .from("inventory_movements")
+    .update({
+      received_by: user.id,
+      received_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.movement_id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/inventario/movimientos");
+  revalidatePath("/inventario");
+  revalidatePath("/planta");
   return { error: null };
 }

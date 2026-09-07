@@ -53,6 +53,8 @@ export type Database = {
           notes: string | null
           quantity: number
           reason_code: string | null
+          received_at: string | null
+          received_by: string | null
           reference_doc: string | null
           to_location_id: string | null
         }
@@ -70,6 +72,8 @@ export type Database = {
           notes?: string | null
           quantity: number
           reason_code?: string | null
+          received_at?: string | null
+          received_by?: string | null
           reference_doc?: string | null
           to_location_id?: string | null
         }
@@ -87,6 +91,8 @@ export type Database = {
           notes?: string | null
           quantity?: number
           reason_code?: string | null
+          received_at?: string | null
+          received_by?: string | null
           reference_doc?: string | null
           to_location_id?: string | null
         }
@@ -124,6 +130,13 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -451,6 +464,131 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          min_stock: number
+          name: string
+          unit_of_measure: Database["public"]["Enums"]["uom"]
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          min_stock?: number
+          name: string
+          unit_of_measure?: Database["public"]["Enums"]["uom"]
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          min_stock?: number
+          name?: string
+          unit_of_measure?: Database["public"]["Enums"]["uom"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_movements: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string
+          from_location_id: string | null
+          id: string
+          movement_type: Database["public"]["Enums"]["product_movement_type"]
+          notes: string | null
+          product_id: string
+          quantity: number
+          reference_doc: string | null
+          to_location_id: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by: string
+          from_location_id?: string | null
+          id?: string
+          movement_type: Database["public"]["Enums"]["product_movement_type"]
+          notes?: string | null
+          product_id: string
+          quantity: number
+          reference_doc?: string | null
+          to_location_id?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string
+          from_location_id?: string | null
+          id?: string
+          movement_type?: Database["public"]["Enums"]["product_movement_type"]
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          reference_doc?: string | null
+          to_location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_movements_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active: boolean
@@ -590,6 +728,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_material_consumo_por_ubicacion: {
+        Row: {
+          consumido: number | null
+          location_id: string | null
+          material_id: string | null
+        }
+        Relationships: []
+      }
+      v_product_stock: {
+        Row: {
+          location_id: string | null
+          product_id: string | null
+          quantity: number | null
+        }
+        Relationships: []
+      }
       v_oee_by_shift: {
         Row: {
           good_qty: number | null
@@ -625,6 +779,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_product_outbound_movement: {
+        Args: {
+          p_from_location_id: string
+          p_notes?: string
+          p_product_id: string
+          p_quantity: number
+          p_reference_doc?: string
+        }
+        Returns: string
+      }
       current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -632,10 +796,11 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      location_type: "bodega" | "piso" | "maquina" | "externo" | "merma"
+      location_type: "bodega" | "piso" | "maquina" | "externo" | "merma" | "almacen_pt"
       material_category: "principal" | "pigmento" | "tinta" | "solvente"
       material_type: "resina" | "masterbatch" | "aditivo" | "otro"
       movement_type: "entrada" | "salida" | "traslado" | "consumo" | "ajuste"
+      product_movement_type: "entrada" | "salida" | "ajuste"
       shift_status: "abierto" | "cerrado"
       uom: "kg" | "g" | "ton" | "bulto" | "unidad" | "cuñete"
       user_role: "operario" | "supervisor" | "admin"
@@ -766,10 +931,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      location_type: ["bodega", "piso", "maquina", "externo", "merma"],
+      location_type: ["bodega", "piso", "maquina", "externo", "merma", "almacen_pt"],
       material_category: ["principal", "pigmento", "tinta", "solvente"],
       material_type: ["resina", "masterbatch", "aditivo", "otro"],
       movement_type: ["entrada", "salida", "traslado", "consumo", "ajuste"],
+      product_movement_type: ["entrada", "salida", "ajuste"],
       shift_status: ["abierto", "cerrado"],
       uom: ["kg", "g", "ton", "bulto", "unidad", "cuñete"],
       user_role: ["operario", "supervisor", "admin"],

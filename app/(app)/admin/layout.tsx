@@ -8,6 +8,7 @@ const SECTIONS = [
   { href: "/admin", label: "Resumen" },
   { href: "/admin/usuarios", label: "Usuarios" },
   { href: "/admin/materiales", label: "Materiales" },
+  { href: "/admin/productos", label: "Productos" },
   { href: "/admin/maquinas", label: "Máquinas" },
   { href: "/admin/ubicaciones", label: "Ubicaciones" },
   { href: "/admin/motivos-paro", label: "Motivos de paro" },
