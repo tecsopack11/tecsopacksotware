@@ -13,6 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
 import { crearSalidaTraslado, type ActionState } from "@/lib/actions/inventory";
 
 export type StockLine = {
@@ -35,10 +42,6 @@ const MOVEMENT_TYPE_ITEMS = {
   consumo: "Consumo en máquina",
 };
 
-function toItems(options: { id: string; label: string }[]) {
-  return Object.fromEntries(options.map((o) => [o.id, o.label]));
-}
-
 export function SalidaForm({
   stockLines,
   destinations,
@@ -50,6 +53,19 @@ export function SalidaForm({
 }) {
   const [state, formAction, pending] = useActionState(crearSalidaTraslado, initialState);
   const [selectedKey, setSelectedKey] = useState<string>("");
+
+  const stockLineItems = useMemo(
+    () => stockLines.map((s) => ({ value: s.key, label: s.label })),
+    [stockLines],
+  );
+  const selectedStockItem = useMemo(
+    () => stockLineItems.find((i) => i.value === selectedKey) ?? null,
+    [stockLineItems, selectedKey],
+  );
+  const destinationItems = useMemo(
+    () => destinations.map((d) => ({ value: d.id, label: d.label })),
+    [destinations],
+  );
 
   const selected = useMemo(
     () => stockLines.find((s) => s.key === selectedKey),
@@ -85,23 +101,25 @@ export function SalidaForm({
 
           <div className="space-y-2">
             <Label htmlFor="stock_line">Material / lote / ubicación de origen</Label>
-            <Select
-              value={selectedKey}
-              onValueChange={(value) => setSelectedKey(value ?? "")}
-              items={Object.fromEntries(stockLines.map((s) => [s.key, s.label]))}
-              required
+            <Combobox
+              items={stockLineItems}
+              value={selectedStockItem}
+              onValueChange={(item) => setSelectedKey(item?.value ?? "")}
             >
-              <SelectTrigger id="stock_line">
-                <SelectValue placeholder="Selecciona el material a mover" />
-              </SelectTrigger>
-              <SelectContent>
-                {stockLines.map((s) => (
-                  <SelectItem key={s.key} value={s.key}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxTrigger id="stock_line">
+                <ComboboxValue placeholder="Selecciona el material a mover" />
+              </ComboboxTrigger>
+              <ComboboxContent
+                searchPlaceholder="Buscar material, lote o ubicación..."
+                emptyMessage="No se encontraron materiales."
+              >
+                {(item: { value: string; label: string }) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxContent>
+            </Combobox>
             {selected && (
               <p className="text-xs text-muted-foreground">
                 Disponible: {selected.quantity.toLocaleString("es-CL")} {selected.unit}
@@ -115,18 +133,21 @@ export function SalidaForm({
 
           <div className="space-y-2">
             <Label htmlFor="to_location_id">Destino</Label>
-            <Select name="to_location_id" items={toItems(destinations)}>
-              <SelectTrigger id="to_location_id">
-                <SelectValue placeholder="Selecciona destino (traslado/consumo)" />
-              </SelectTrigger>
-              <SelectContent>
-                {destinations.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox items={destinationItems} name="to_location_id">
+              <ComboboxTrigger id="to_location_id">
+                <ComboboxValue placeholder="Selecciona destino (traslado/consumo)" />
+              </ComboboxTrigger>
+              <ComboboxContent
+                searchPlaceholder="Buscar ubicación..."
+                emptyMessage="No se encontraron ubicaciones."
+              >
+                {(item: { value: string; label: string }) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxContent>
+            </Combobox>
           </div>
 
           <div className="space-y-2">
