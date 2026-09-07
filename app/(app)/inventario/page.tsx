@@ -34,7 +34,7 @@ const AREA_BY_LOCATION_TYPE: Record<string, Area | undefined> = {
 const AREA_ORDER: Area[] = ["bodega", "proceso"];
 const AREA_LABEL: Record<Area, string> = {
   bodega: "Bodega",
-  proceso: "Proceso",
+  proceso: "Proceso productivo",
 };
 
 function isArea(value: string): value is Area {
@@ -77,11 +77,19 @@ type MaterialRow = {
   category: MaterialCategory;
 };
 
-function MaterialCard({ material, total }: { material: MaterialRow; total: number }) {
+function MaterialCard({
+  material,
+  total,
+  showThreshold,
+}: {
+  material: MaterialRow;
+  total: number;
+  showThreshold: boolean;
+}) {
   const status =
-    material.min_stock > 0 && total < material.min_stock
+    showThreshold && material.min_stock > 0 && total < material.min_stock
       ? "bajo"
-      : material.min_stock > 0 && total < material.min_stock * 1.25
+      : showThreshold && material.min_stock > 0 && total < material.min_stock * 1.25
         ? "cerca"
         : "ok";
   return (
@@ -106,9 +114,11 @@ function MaterialCard({ material, total }: { material: MaterialRow; total: numbe
         >
           {total.toLocaleString("es-CO")} {material.unit_of_measure}
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          Mínimo: {material.min_stock.toLocaleString("es-CO")} {material.unit_of_measure}
-        </div>
+        {showThreshold && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Mínimo: {material.min_stock.toLocaleString("es-CO")} {material.unit_of_measure}
+          </div>
+        )}
         {status === "bajo" && (
           <Badge variant="destructive" className="mt-2">
             Pedir / comprar
@@ -162,15 +172,21 @@ export default async function InventarioPage({
       .map((c) => [`${c.material_id}-${c.location_id}`, Number(c.consumido)]),
   );
 
-  // Total por material, sumado en TODAS las ubicaciones — base para las casillas
-  // de arriba y para decidir si hay que pedir/comprar.
-  const totalByMaterial = new Map<string, number>();
+  // Total por material, separado por área (bodega vs proceso productivo) — base
+  // para las casillas de arriba y para decidir si hay que pedir/comprar (solo
+  // contra lo que hay en bodega). Ubicaciones externo/merma no cuentan en
+  // ninguna de las dos áreas.
+  const totalByMaterialByArea: Record<Area, Map<string, number>> = {
+    bodega: new Map<string, number>(),
+    proceso: new Map<string, number>(),
+  };
   for (const row of stock ?? []) {
-    if (!row.material_id) continue;
-    totalByMaterial.set(
-      row.material_id,
-      (totalByMaterial.get(row.material_id) ?? 0) + Number(row.quantity),
-    );
+    if (!row.material_id || !row.location_id) continue;
+    const location = locationById.get(row.location_id);
+    const area = location ? AREA_BY_LOCATION_TYPE[location.type] : undefined;
+    if (!area) continue;
+    const target = totalByMaterialByArea[area];
+    target.set(row.material_id, (target.get(row.material_id) ?? 0) + Number(row.quantity));
   }
 
   const materialsByCategory = new Map<MaterialCategory, MaterialRow[]>();
@@ -275,20 +291,30 @@ function materialSortKey(material: MaterialRow): number {
         ))}
       </div>
 
-      {visibleCategories.map((category) => {
-        const list = materialsByCategory.get(category);
-        if (!list || list.length === 0) return null;
-        return (
-          <div key={category} className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">{CATEGORY_LABEL[category]}</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-              {list.map((m) => (
-                <MaterialCard key={m.id} material={m} total={totalByMaterial.get(m.id) ?? 0} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      {AREA_ORDER.map((area) => (
+        <div key={area} className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">{AREA_LABEL[area]}</h2>
+          {visibleCategories.map((category) => {
+            const list = materialsByCategory.get(category);
+            if (!list || list.length === 0) return null;
+            return (
+              <div key={`${area}-${category}`} className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground">{CATEGORY_LABEL[category]}</h3>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                  {list.map((m) => (
+                    <MaterialCard
+                      key={m.id}
+                      material={m}
+                      total={totalByMaterialByArea[area].get(m.id) ?? 0}
+                      showThreshold={area === "bodega"}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
 
       <Card>
         <CardHeader>
