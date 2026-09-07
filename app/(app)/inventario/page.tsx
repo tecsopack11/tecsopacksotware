@@ -147,6 +147,9 @@ export default async function InventarioPage({
   const activeCategory = categoria && isMaterialCategory(categoria) ? categoria : null;
   const activeArea = area && isArea(area) ? area : null;
   const activeLocationType = ubicacion && isLocationType(ubicacion) ? ubicacion : null;
+  // Las tarjetas de arriba siempre muestran una sola área a la vez; "Bodega"
+  // es el estado por defecto al entrar a la página.
+  const topArea: Area = activeArea ?? "bodega";
 
   const supabase = await createClient();
 
@@ -291,30 +294,49 @@ function materialSortKey(material: MaterialRow): number {
         ))}
       </div>
 
-      {AREA_ORDER.map((area) => (
-        <div key={area} className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">{AREA_LABEL[area]}</h2>
-          {visibleCategories.map((category) => {
-            const list = materialsByCategory.get(category);
-            if (!list || list.length === 0) return null;
-            return (
-              <div key={`${area}-${category}`} className="space-y-3">
-                <h3 className="text-lg font-semibold text-foreground">{CATEGORY_LABEL[category]}</h3>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                  {list.map((m) => (
-                    <MaterialCard
-                      key={m.id}
-                      material={m}
-                      total={totalByMaterialByArea[area].get(m.id) ?? 0}
-                      showThreshold={area === "bodega"}
-                    />
-                  ))}
-                </div>
+      <div className="flex flex-wrap gap-2">
+        {AREA_ORDER.map((a) => (
+          <Button
+            key={a}
+            render={
+              <Link
+                href={buildInventarioHref({
+                  categoria: activeCategory,
+                  area: a,
+                  ubicacion: activeLocationType,
+                })}
+              />
+            }
+            nativeButton={false}
+            variant={topArea === a ? "secondary" : "outline"}
+          >
+            {AREA_LABEL[a]}
+          </Button>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">{AREA_LABEL[topArea]}</h2>
+        {visibleCategories.map((category) => {
+          const list = materialsByCategory.get(category);
+          if (!list || list.length === 0) return null;
+          return (
+            <div key={category} className="space-y-3">
+              <h3 className="text-lg font-semibold text-foreground">{CATEGORY_LABEL[category]}</h3>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                {list.map((m) => (
+                  <MaterialCard
+                    key={m.id}
+                    material={m}
+                    total={totalByMaterialByArea[topArea].get(m.id) ?? 0}
+                    showThreshold={topArea === "bodega"}
+                  />
+                ))}
               </div>
-            );
-          })}
-        </div>
-      ))}
+            </div>
+          );
+        })}
+      </div>
 
       <Card>
         <CardHeader>
