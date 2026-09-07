@@ -76,8 +76,8 @@ export async function crearEntrada(
     return { error: movementError.message };
   }
 
-  revalidatePath("/inventario");
-  redirect("/inventario");
+  revalidatePath("/inventario/materia-prima");
+  redirect("/inventario/materia-prima");
 }
 
 const salidaSchema = z.object({
@@ -88,7 +88,7 @@ const salidaSchema = z.object({
   from_location_id: z.string().uuid(),
   to_location_id: z.string().uuid().optional().or(z.literal("")),
   notes: z.string().optional(),
-  redirect_to: z.enum(["/inventario", "/planta"]).optional(),
+  redirect_to: z.enum(["/inventario/materia-prima", "/planta"]).optional(),
 });
 
 export async function crearSalidaTraslado(
@@ -121,8 +121,8 @@ export async function crearSalidaTraslado(
     return { error: error.message };
   }
 
-  const destination = input.redirect_to ?? "/inventario";
-  revalidatePath("/inventario");
+  const destination = input.redirect_to ?? "/inventario/materia-prima";
+  revalidatePath("/inventario/materia-prima");
   revalidatePath("/planta");
   redirect(destination);
 }
@@ -196,7 +196,7 @@ export async function confirmarRecepcion(
   }
 
   revalidatePath("/inventario/movimientos");
-  revalidatePath("/inventario");
+  revalidatePath("/inventario/materia-prima");
   revalidatePath("/planta");
   return { error: null };
 }

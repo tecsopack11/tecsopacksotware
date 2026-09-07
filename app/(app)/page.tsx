@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [{ data: materials }, { data: stock }, { data: openShifts }, { data: openDowntime }] =
+  const [{ data: materials }, { data: stock }, { data: locations }, { data: openShifts }, { data: openDowntime }] =
     await Promise.all([
       supabase.from("materials").select("id, name, min_stock").eq("active", true),
-      supabase.from("v_inventory_stock").select("material_id, quantity"),
+      supabase.from("v_inventory_stock").select("material_id, location_id, quantity"),
+      supabase.from("locations").select("id, type"),
       supabase
         .from("shift_instances")
         .select("id, machines(name)")
@@ -22,17 +23,23 @@ export default async function DashboardPage() {
         .is("end_time", null),
     ]);
 
-  const totalsByMaterial = new Map<string, number>();
+  // El mínimo se compara solo contra lo que hay en Bodega, no contra el total
+  // de la planta (igual que en /inventario/materia-prima): lo que ya salió a
+  // producción no sirve para decidir si hace falta comprar.
+  const bodegaLocationIds = new Set(
+    (locations ?? []).filter((l) => l.type === "bodega").map((l) => l.id),
+  );
+  const totalsByMaterialBodega = new Map<string, number>();
   for (const row of stock ?? []) {
-    if (!row.material_id) continue;
-    totalsByMaterial.set(
+    if (!row.material_id || !row.location_id || !bodegaLocationIds.has(row.location_id)) continue;
+    totalsByMaterialBodega.set(
       row.material_id,
-      (totalsByMaterial.get(row.material_id) ?? 0) + Number(row.quantity),
+      (totalsByMaterialBodega.get(row.material_id) ?? 0) + Number(row.quantity),
     );
   }
 
   const lowStock = (materials ?? []).filter((m) => {
-    const total = totalsByMaterial.get(m.id) ?? 0;
+    const total = totalsByMaterialBodega.get(m.id) ?? 0;
     return m.min_stock > 0 && total < m.min_stock;
   });
 
@@ -50,7 +57,10 @@ export default async function DashboardPage() {
             <CardTitle className="text-3xl">{lowStock.length}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Link href="/inventario" className="text-sm text-primary hover:underline">
+            <Link
+              href="/inventario/materia-prima?area=bodega"
+              className="text-sm text-primary hover:underline"
+            >
               Ver inventario
             </Link>
           </CardContent>
@@ -97,7 +107,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Materiales bajo el mínimo</CardTitle>
-            <CardDescription>Suma de existencia en todas las ubicaciones</CardDescription>
+            <CardDescription>Existencia en Bodega</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {lowStock.map((m) => (

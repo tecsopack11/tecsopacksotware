@@ -21,20 +21,26 @@ export function StockAlerts() {
     async function checkStock() {
       if (Notification.permission !== "granted") return;
 
-      const [{ data: materials }, { data: stock }] = await Promise.all([
+      const [{ data: materials }, { data: stock }, { data: locations }] = await Promise.all([
         supabase
           .from("materials")
           .select("id, name, unit_of_measure, min_stock")
           .eq("active", true)
           .gt("min_stock", 0),
-        supabase.from("v_inventory_stock").select("material_id, quantity"),
+        supabase.from("v_inventory_stock").select("material_id, location_id, quantity"),
+        supabase.from("locations").select("id, type"),
       ]);
 
       if (cancelled || !materials) return;
 
+      // Solo cuenta lo que hay en Bodega — lo que ya salió a producción no
+      // sirve para decidir si hace falta comprar (igual que en /inventario).
+      const bodegaLocationIds = new Set(
+        (locations ?? []).filter((l) => l.type === "bodega").map((l) => l.id),
+      );
       const totals = new Map<string, number>();
       for (const row of stock ?? []) {
-        if (!row.material_id) continue;
+        if (!row.material_id || !row.location_id || !bodegaLocationIds.has(row.location_id)) continue;
         totals.set(row.material_id, (totals.get(row.material_id) ?? 0) + Number(row.quantity));
       }
 

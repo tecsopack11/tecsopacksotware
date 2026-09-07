@@ -48,7 +48,7 @@ const NAV_ITEMS: (NavItem & { roles: Role[] })[] = [
     icon: Boxes,
     roles: ["supervisor", "admin"],
     children: [
-      { href: "/inventario", label: "Materia prima" },
+      { href: "/inventario/materia-prima", label: "Materia prima" },
       { href: "/inventario/movimientos", label: "Movimientos MP" },
       { href: "/inventario-pt", label: "Producto terminado" },
       { href: "/inventario-pt/movimientos", label: "Movimientos PT" },

@@ -46,7 +46,7 @@ export function SalidaForm({
 }: {
   stockLines: StockLine[];
   destinations: Option[];
-  redirectTo?: "/inventario" | "/planta";
+  redirectTo?: "/inventario/materia-prima" | "/planta";
 }) {
   const [state, formAction, pending] = useActionState(crearSalidaTraslado, initialState);
   const [selectedKey, setSelectedKey] = useState<string>("");
