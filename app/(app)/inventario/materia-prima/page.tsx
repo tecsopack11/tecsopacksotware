@@ -256,7 +256,7 @@ function materialSortKey(material: MaterialRow): number {
             nativeButton={false}
             variant="outline"
           >
-            Registro rápido
+            Registro
           </Button>
         </div>
       </div>
