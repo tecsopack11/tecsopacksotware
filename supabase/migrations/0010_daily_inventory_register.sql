@@ -25,6 +25,8 @@ declare
   v_lot_id uuid;
   v_count integer := 0;
   v_notes text;
+  v_is_sale boolean := left(coalesce(p_observations, ''), 10) = '[VENTA_MP]';
+  v_clean_observations text;
 begin
   if v_user_id is null then
     raise exception 'Sesión no válida';
@@ -58,11 +60,17 @@ begin
     raise exception 'Un material aparece repetido en el registro';
   end if;
 
+  v_clean_observations := case
+    when v_is_sale then substring(coalesce(p_observations, '') from 11)
+    else coalesce(p_observations, '')
+  end;
+
   v_notes := concat_ws(
     ' · ',
     'Registro diario ' || p_record_date::text,
     'Responsable: ' || btrim(p_responsible),
-    nullif(btrim(coalesce(p_observations, '')), '')
+    case when v_is_sale then 'Venta de materia prima' end,
+    nullif(btrim(v_clean_observations), '')
   );
 
   -- Primero valida todas las filas y bloquea cada inventario afectado.
@@ -78,6 +86,10 @@ begin
 
     if v_entry < 0 or v_exit < 0 or (v_entry = 0 and v_exit = 0) then
       raise exception 'Las cantidades deben ser positivas';
+    end if;
+
+    if v_is_sale and v_entry > 0 then
+      raise exception 'Una venta de materia prima solo puede registrar salidas';
     end if;
 
     if not exists (select 1 from public.materials where id = v_material_id and active) then
@@ -157,10 +169,12 @@ begin
 
         insert into public.inventory_movements (
           movement_type, material_id, lot_id, quantity, from_location_id,
-          reference_doc, notes, created_by
+          reference_doc, reason_code, notes, created_by
         ) values (
           'salida', v_material_id, v_lot.lot_id, v_take, p_location_id,
-          'REG-' || to_char(p_record_date, 'YYYYMMDD'), v_notes, v_user_id
+          case when v_is_sale then 'VENTA-MP-' else 'REG-' end || to_char(p_record_date, 'YYYYMMDD'),
+          case when v_is_sale then 'VENTA_MP' end,
+          v_notes, v_user_id
         );
 
         v_remaining := v_remaining - v_take;

@@ -44,6 +44,7 @@ export default async function RegistroInventarioPage() {
         locations={(locations ?? []).map((location) => ({ id: location.id, name: location.name }))}
         stock={stock}
         defaultLocationId={defaultLocation.id}
+        warehouseLocationId={defaultLocation.id}
         defaultResponsible={profile?.full_name ?? ""}
       />
     </div>

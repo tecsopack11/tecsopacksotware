@@ -254,9 +254,10 @@ function materialSortKey(material: MaterialRow): number {
           <Button
             render={<Link href="/inventario/registro" />}
             nativeButton={false}
-            variant="outline"
+            size="lg"
+            className="px-5 text-base font-semibold shadow-sm"
           >
-            Registro
+            Ingresos / Salidas
           </Button>
         </div>
       </div>

@@ -15,6 +15,7 @@ const dailyRowSchema = z.object({
 
 const dailyRegisterSchema = z.object({
   location_id: z.string().uuid(),
+  movement_kind: z.enum(["regular", "sale"]),
   record_date: z.iso.date(),
   responsible: z.string().trim().min(1, "El responsable es obligatorio"),
   observations: z.string().trim().max(500).optional(),
@@ -47,6 +48,7 @@ export async function crearRegistroDiario(
 
   const parsed = dailyRegisterSchema.safeParse({
     location_id: formData.get("location_id"),
+    movement_kind: formData.get("movement_kind"),
     record_date: formData.get("record_date"),
     responsible: formData.get("responsible"),
     observations: formData.get("observations"),
@@ -55,6 +57,10 @@ export async function crearRegistroDiario(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  if (parsed.data.movement_kind === "sale" && parsed.data.rows.some((row) => row.entry > 0)) {
+    return { error: "Una venta de materia prima solo puede registrar salidas." };
   }
 
   const supabase = await createClient();
@@ -67,7 +73,9 @@ export async function crearRegistroDiario(
     p_location_id: parsed.data.location_id,
     p_record_date: parsed.data.record_date,
     p_responsible: parsed.data.responsible,
-    p_observations: parsed.data.observations ?? "",
+    p_observations: parsed.data.movement_kind === "sale"
+      ? `[VENTA_MP]${parsed.data.observations ?? ""}`
+      : parsed.data.observations ?? "",
     p_rows: parsed.data.rows,
   });
 

@@ -53,17 +53,21 @@ export function RegistroDiarioForm({
   locations,
   stock,
   defaultLocationId,
+  warehouseLocationId,
   defaultResponsible,
 }: {
   materials: Material[];
   locations: Location[];
   stock: Stock;
   defaultLocationId: string;
+  warehouseLocationId: string;
   defaultResponsible: string;
 }) {
   const [state, formAction, pending] = useActionState(crearRegistroDiario, initialState);
-  const [locationId, setLocationId] = useState(defaultLocationId);
+  const [flow, setFlow] = useState(defaultLocationId);
   const [quantities, setQuantities] = useState<Quantities>({});
+  const isSale = flow === "sale";
+  const locationId = isSale ? warehouseLocationId : flow;
 
   const grouped = useMemo(
     () => CATEGORY_ORDER.map((category) => ({
@@ -80,6 +84,15 @@ export function RegistroDiarioForm({
     }));
   }
 
+  function changeFlow(value: string) {
+    setFlow(value);
+    if (value === "sale") {
+      setQuantities((current) => Object.fromEntries(
+        Object.entries(current).map(([id, quantity]) => [id, { ...quantity, entry: "" }]),
+      ));
+    }
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       <Card className="border-t-4 border-t-primary">
@@ -93,19 +106,25 @@ export function RegistroDiarioForm({
             <Input id="responsible" name="responsible" defaultValue={defaultResponsible} placeholder="Nombre" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="location_id">Ubicación</Label>
+            <Label htmlFor="inventory_flow">Ubicación / flujo</Label>
+            <input type="hidden" name="location_id" value={locationId} />
+            <input type="hidden" name="movement_kind" value={isSale ? "sale" : "regular"} />
             <Select
-              name="location_id"
-              items={Object.fromEntries(locations.map((location) => [location.id, location.name]))}
-              value={locationId}
-              onValueChange={(value) => value && setLocationId(value)}
+              items={{
+                ...Object.fromEntries(locations.map((location) => [location.id, location.name])),
+                sale: "Venta de MP",
+              }}
+              value={flow}
+              onValueChange={(value) => value && changeFlow(value)}
               required
             >
-              <SelectTrigger id="location_id"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="inventory_flow"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {locations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}
+                <SelectItem value="sale">Venta de MP</SelectItem>
               </SelectContent>
             </Select>
+            {isSale && <p className="text-xs text-muted-foreground">La venta se descuenta de la bodega principal.</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="observations">Observaciones</Label>
@@ -155,6 +174,7 @@ export function RegistroDiarioForm({
                             placeholder="0"
                             value={quantities[material.id]?.entry ?? ""}
                             onChange={(event) => change(material.id, "entry", event.target.value)}
+                            disabled={isSale}
                             className="text-center"
                             aria-label={`Entrada de ${material.name}`}
                           />
