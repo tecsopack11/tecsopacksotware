@@ -252,14 +252,11 @@ function materialSortKey(material: MaterialRow): number {
             Historial
           </Button>
           <Button
-            render={<Link href="/inventario/salidas-traslados/nueva" />}
+            render={<Link href="/inventario/registro" />}
             nativeButton={false}
             variant="outline"
           >
-            Salida / Traslado
-          </Button>
-          <Button render={<Link href="/inventario/entradas/nueva" />} nativeButton={false}>
-            Nueva entrada
+            Registro rápido
           </Button>
         </div>
       </div>

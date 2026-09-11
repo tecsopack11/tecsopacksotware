@@ -766,6 +766,16 @@ export type Database = {
       }
     }
     Functions: {
+      create_daily_inventory_register: {
+        Args: {
+          p_location_id: string
+          p_observations: string
+          p_record_date: string
+          p_responsible: string
+          p_rows: Json
+        }
+        Returns: number
+      }
       create_outbound_movement: {
         Args: {
           p_from_location_id?: string
