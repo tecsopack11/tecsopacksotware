@@ -10,10 +10,12 @@ export type ActionState = { error: string | null };
 const dailyRowSchema = z.object({
   material_id: z.string().uuid(),
   entry: z.number().nonnegative(),
+  unit_price: z.number().positive().max(999_999_999).optional(),
   exit: z.number().nonnegative(),
 });
 
 const dailyRegisterSchema = z.object({
+  request_id: z.string().uuid(),
   location_id: z.string().uuid(),
   movement_kind: z.enum(["regular", "sale"]),
   record_date: z.iso.date(),
@@ -29,7 +31,7 @@ export async function crearRegistroDiario(
   const rows: z.infer<typeof dailyRowSchema>[] = [];
 
   for (const [key, value] of formData.entries()) {
-    const match = /^(entry|exit)\.([0-9a-f-]{36})$/.exec(key);
+    const match = /^(entry|exit|unit_price)\.([0-9a-f-]{36})$/.exec(key);
     if (!match || typeof value !== "string" || value.trim() === "") continue;
 
     const quantity = Number(value);
@@ -43,10 +45,11 @@ export async function crearRegistroDiario(
       row = { material_id: materialId, entry: 0, exit: 0 };
       rows.push(row);
     }
-    row[field as "entry" | "exit"] = quantity;
+    row[field as "entry" | "exit" | "unit_price"] = quantity;
   }
 
   const parsed = dailyRegisterSchema.safeParse({
+    request_id: formData.get("request_id"),
     location_id: formData.get("location_id"),
     movement_kind: formData.get("movement_kind"),
     record_date: formData.get("record_date"),
@@ -59,6 +62,10 @@ export async function crearRegistroDiario(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
+  if (parsed.data.rows.some((row) => row.entry > 0 && !row.unit_price)) {
+    return { error: "Indica el precio en COP por unidad de cada material que ingresa." };
+  }
+
   if (parsed.data.movement_kind === "sale" && parsed.data.rows.some((row) => row.entry > 0)) {
     return { error: "Una venta de materia prima solo puede registrar salidas." };
   }
@@ -69,7 +76,8 @@ export async function crearRegistroDiario(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sesión no válida." };
 
-  const { error } = await supabase.rpc("create_daily_inventory_register", {
+  const { error } = await supabase.rpc("create_priced_daily_inventory_register", {
+    p_request_id: parsed.data.request_id,
     p_location_id: parsed.data.location_id,
     p_record_date: parsed.data.record_date,
     p_responsible: parsed.data.responsible,
@@ -81,6 +89,7 @@ export async function crearRegistroDiario(
 
   if (error) return { error: error.message };
 
+  revalidatePath("/inventario/costos");
   revalidatePath("/inventario/materia-prima");
   revalidatePath("/inventario/movimientos");
   redirect("/inventario/materia-prima");

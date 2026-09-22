@@ -247,7 +247,8 @@ function materialSortKey(material: MaterialRow): number {
           <h1 className="text-2xl font-semibold">Materia prima</h1>
           <p className="text-muted-foreground">Existencia actual por ubicación y lote.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button render={<Link href="/inventario/costos" />} nativeButton={false} variant="outline">Costos de MP</Button>
           <Button render={<Link href="/inventario/movimientos" />} nativeButton={false} variant="outline">
             Historial
           </Button>

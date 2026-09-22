@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { RegistroDiarioForm } from "@/components/inventario/registro-diario-form";
 
@@ -31,9 +32,10 @@ export default async function RegistroInventarioPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold">Registro rápido de materia prima</h1>
-        <p className="text-muted-foreground">Digita únicamente las entradas y salidas del día. Los totales se calculan automáticamente.</p>
+        <p className="text-muted-foreground">Registra entradas con su precio y las salidas del día. El sistema calcula cantidades y promedios de costo.</p>
       </div>
       <RegistroDiarioForm
+        requestId={randomUUID()}
         materials={(materials ?? []).map((material) => ({
           id: material.id,
           name: material.name,

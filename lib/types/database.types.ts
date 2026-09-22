@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      material_cost_revisions: {
+        Row: import("@/lib/costs/schema").CostRevision
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       downtime_reasons: {
         Row: {
           active: boolean
@@ -43,6 +49,10 @@ export type Database = {
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          valuation_sequence: number
+          purchase_request_payload: Json | null
+          effective_date: string
+          purchase_request_id: string | null
           created_at: string
           created_by: string
           from_location_id: string | null
@@ -62,6 +72,10 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          valuation_sequence?: never
+          purchase_request_payload?: Json | null
+          effective_date?: string
+          purchase_request_id?: string | null
           created_at?: string
           created_by: string
           from_location_id?: string | null
@@ -81,6 +95,10 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          valuation_sequence?: never
+          purchase_request_payload?: Json | null
+          effective_date?: string
+          purchase_request_id?: string | null
           created_at?: string
           created_by?: string
           from_location_id?: string | null
@@ -766,6 +784,19 @@ export type Database = {
       }
     }
     Functions: {
+      create_priced_daily_inventory_register: {
+        Args: { p_request_id: string; p_location_id: string; p_record_date: string; p_responsible: string; p_observations: string; p_rows: Json }
+        Returns: number
+      }
+      material_cost_snapshot: { Args: Record<string, never>; Returns: Json }
+      save_material_cost: {
+        Args: { p_movement_id: string; p_expected_revision: number; p_cost: Json }
+        Returns: string
+      }
+      create_costed_material_purchase: {
+        Args: { p_request_id: string; p_receipt: Json; p_cost: Json }
+        Returns: string
+      }
       create_daily_inventory_register: {
         Args: {
           p_location_id: string

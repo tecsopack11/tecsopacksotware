@@ -50,6 +50,7 @@ const NAV_ITEMS: (NavItem & { roles: Role[] })[] = [
     children: [
       { href: "/inventario/materia-prima", label: "Materia prima" },
       { href: "/inventario/movimientos", label: "Movimientos MP" },
+      { href: "/inventario/costos", label: "Costos de MP" },
       { href: "/inventario-pt", label: "Producto terminado" },
       { href: "/inventario-pt/movimientos", label: "Movimientos PT" },
     ],

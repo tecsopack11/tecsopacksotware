@@ -26,7 +26,7 @@ type Material = {
 
 type Location = { id: string; name: string };
 type Stock = Record<string, Record<string, number>>;
-type Quantities = Record<string, { entry: string; exit: string }>;
+type Quantities = Record<string, { entry: string; exit: string; unit_price?: string }>;
 
 const CATEGORY_LABEL: Record<string, string> = {
   principal: "Materiales principales",
@@ -55,6 +55,7 @@ export function RegistroDiarioForm({
   defaultLocationId,
   warehouseLocationId,
   defaultResponsible,
+  requestId,
 }: {
   materials: Material[];
   locations: Location[];
@@ -62,6 +63,7 @@ export function RegistroDiarioForm({
   defaultLocationId: string;
   warehouseLocationId: string;
   defaultResponsible: string;
+  requestId: string;
 }) {
   const [state, formAction, pending] = useActionState(crearRegistroDiario, initialState);
   const [flow, setFlow] = useState(defaultLocationId);
@@ -77,7 +79,7 @@ export function RegistroDiarioForm({
     [materials],
   );
 
-  function change(materialId: string, field: "entry" | "exit", value: string) {
+  function change(materialId: string, field: "entry" | "exit" | "unit_price", value: string) {
     setQuantities((current) => ({
       ...current,
       [materialId]: { ...(current[materialId] ?? { entry: "", exit: "" }), [field]: value },
@@ -95,6 +97,7 @@ export function RegistroDiarioForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="request_id" value={requestId} />
       <Card className="border-t-4 border-t-primary">
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-2">
@@ -133,14 +136,16 @@ export function RegistroDiarioForm({
         </CardContent>
       </Card>
 
+      <p className="text-sm text-muted-foreground">En cada entrada indica el precio por la unidad del material (por ejemplo, COP/kg). Si hubo dos compras a precios distintos, guárdalas por separado. Los gastos adicionales se pueden completar en Costos de MP.</p>
       <Card>
         <CardContent className="px-0">
           <div className="overflow-x-auto">
-            <div className="min-w-[760px]">
-              <div className="grid grid-cols-[minmax(260px,1fr)_repeat(5,110px)] gap-2 px-4 pb-2 text-center text-xs font-semibold text-white">
+            <div className="min-w-[920px]">
+              <div className="grid grid-cols-[minmax(260px,1fr)_repeat(6,110px)] gap-2 px-4 pb-2 text-center text-xs font-semibold text-white">
                 <span />
                 <span className="rounded-md bg-primary px-2 py-1.5">Inv. inicial</span>
                 <span className="rounded-md bg-primary px-2 py-1.5">Entradas</span>
+                <span className="rounded-md bg-primary px-2 py-1.5">Precio COP / ud.</span>
                 <span className="rounded-md bg-ingreso px-2 py-1.5">Total</span>
                 <span className="rounded-md bg-primary px-2 py-1.5">Salidas</span>
                 <span className="rounded-md bg-ingreso px-2 py-1.5">Inv. final</span>
@@ -159,7 +164,7 @@ export function RegistroDiarioForm({
                       const total = initial + entry;
                       const final = total - exit;
                       return (
-                        <div key={material.id} className="grid grid-cols-[minmax(260px,1fr)_repeat(5,110px)] items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">
+                        <div key={material.id} className="grid grid-cols-[minmax(260px,1fr)_repeat(6,110px)] items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">
                           <div>
                             <p className="font-medium leading-tight">{material.name}</p>
                             <p className="text-xs text-muted-foreground">{material.code} · Unidad: {material.unit}</p>
@@ -177,6 +182,16 @@ export function RegistroDiarioForm({
                             disabled={isSale}
                             className="text-center"
                             aria-label={`Entrada de ${material.name}`}
+                          />
+                          <Input
+                            name={`unit_price.${material.id}`}
+                            type="number" inputMode="decimal" min="0.000001" max="999999999" step="0.000001"
+                            placeholder="Precio" required={entry > 0 && !isSale}
+                            value={quantities[material.id]?.unit_price ?? ""}
+                            onChange={(event) => change(material.id, "unit_price", event.target.value)}
+                            disabled={isSale || entry <= 0}
+                            className="text-center"
+                            aria-label={`Precio en COP por ${material.unit} de ${material.name}`}
                           />
                           <Input value={total} readOnly tabIndex={-1} className="border-ingreso/30 bg-accent/60 text-center font-medium" aria-label={`Total de ${material.name}`} />
                           <Input
