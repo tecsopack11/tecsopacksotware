@@ -1,3 +1,4 @@
+-- Costos de materia prima. Cambio detectado por la integración de producción.
 -- Fecha operativa para respetar registros diarios de días anteriores.
 alter table public.inventory_movements add column effective_date date;
 alter table public.inventory_movements add column valuation_sequence bigint generated always as identity;
