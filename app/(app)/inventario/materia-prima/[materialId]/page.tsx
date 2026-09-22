@@ -208,18 +208,18 @@ export default async function MaterialDetailPage({
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[1180px] table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Movimiento</TableHead>
-                <TableHead>Lote / proveedor</TableHead>
-                <TableHead>Origen</TableHead>
-                <TableHead>Destino</TableHead>
-                <TableHead>Documento / nota</TableHead>
-                <TableHead>Responsable</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Cantidad</TableHead>
+                <TableHead className="w-32">Fecha</TableHead>
+                <TableHead className="w-36">Movimiento</TableHead>
+                <TableHead className="w-40">Lote / proveedor</TableHead>
+                <TableHead className="w-36">Origen</TableHead>
+                <TableHead className="w-36">Destino</TableHead>
+                <TableHead className="w-72">Documento / nota</TableHead>
+                <TableHead className="w-40">Responsable</TableHead>
+                <TableHead className="w-36">Estado</TableHead>
+                <TableHead className="w-32 text-right">Cantidad</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -240,27 +240,37 @@ export default async function MaterialDetailPage({
                     <TableCell className="whitespace-nowrap">
                       {date(movement.effective_date)}
                     </TableCell>
-                    <TableCell>{MOVEMENT_LABEL[movement.movement_type]}</TableCell>
-                    <TableCell>
-                      <div>{movement.material_lots?.lot_code ?? "—"}</div>
+                    <TableCell className="whitespace-normal">
+                      {MOVEMENT_LABEL[movement.movement_type]}
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words">
+                      <div className="break-all">{movement.material_lots?.lot_code ?? "—"}</div>
                       {movement.material_lots?.supplier && (
                         <div className="text-xs text-muted-foreground">
                           {movement.material_lots.supplier}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{movement.from?.name ?? "—"}</TableCell>
-                    <TableCell>{movement.to?.name ?? "—"}</TableCell>
-                    <TableCell className="max-w-64">
-                      <div>{movement.reference_doc ?? movement.reason_code ?? "—"}</div>
+                    <TableCell className="whitespace-normal break-words">
+                      {movement.from?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words">
+                      {movement.to?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words align-top">
+                      <div className="break-words">
+                        {movement.reference_doc ?? movement.reason_code ?? "—"}
+                      </div>
                       {movement.notes && (
-                        <div className="line-clamp-2 text-xs text-muted-foreground">
+                        <div className="mt-1 line-clamp-3 break-words text-xs text-muted-foreground">
                           {movement.notes}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{movement.profiles?.full_name || "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-normal break-words">
+                      {movement.profiles?.full_name || "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-normal">
                       {movement.cancelled_at ? (
                         <Badge variant="destructive">Cancelado</Badge>
                       ) : pending ? (
