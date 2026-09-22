@@ -93,44 +93,51 @@ function MaterialCard({
         ? "cerca"
         : "ok";
   return (
-    <Card
-      className={cn(
-        "border-2",
-        status === "bajo" && "border-destructive",
-        status === "cerca" && "border-warning",
-        status === "ok" && "border-transparent",
-      )}
+    <Link
+      href={`/inventario/materia-prima/${material.id}`}
+      className="block rounded-xl outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50"
+      aria-label={`Ver detalle e historial de ${material.name}`}
     >
-      <CardHeader className="pb-1">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{material.name}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "text-2xl font-semibold",
-            status === "bajo" && "text-destructive",
-            status === "cerca" && "text-warning",
-          )}
-        >
-          {total.toLocaleString("es-CO")} {material.unit_of_measure}
-        </div>
-        {showThreshold && (
-          <div className="mt-1 text-xs text-muted-foreground">
-            Mínimo: {material.min_stock.toLocaleString("es-CO")} {material.unit_of_measure}
+      <Card
+        className={cn(
+          "h-full border-2 transition-shadow hover:shadow-md",
+          status === "bajo" && "border-destructive",
+          status === "cerca" && "border-warning",
+          status === "ok" && "border-transparent",
+        )}
+      >
+        <CardHeader className="pb-1">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{material.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            className={cn(
+              "text-2xl font-semibold",
+              status === "bajo" && "text-destructive",
+              status === "cerca" && "text-warning",
+            )}
+          >
+            {total.toLocaleString("es-CO")} {material.unit_of_measure}
           </div>
-        )}
-        {status === "bajo" && (
-          <Badge variant="destructive" className="mt-2">
-            Pedir / comprar
-          </Badge>
-        )}
-        {status === "cerca" && (
-          <Badge variant="outline" className="mt-2 border-warning text-warning">
-            Cerca del mínimo
-          </Badge>
-        )}
-      </CardContent>
-    </Card>
+          {showThreshold && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Mínimo: {material.min_stock.toLocaleString("es-CO")} {material.unit_of_measure}
+            </div>
+          )}
+          {status === "bajo" && (
+            <Badge variant="destructive" className="mt-2">
+              Pedir / comprar
+            </Badge>
+          )}
+          {status === "cerca" && (
+            <Badge variant="outline" className="mt-2 border-warning text-warning">
+              Cerca del mínimo
+            </Badge>
+          )}
+          <div className="mt-3 text-xs font-medium text-primary">Ver detalle e historial →</div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -248,6 +255,13 @@ function materialSortKey(material: MaterialRow): number {
           <p className="text-muted-foreground">Existencia actual por ubicación y lote.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            render={<Link href="/inventario/materia-prima/comportamiento" />}
+            nativeButton={false}
+            variant="outline"
+          >
+            Comportamiento general
+          </Button>
           <Button render={<Link href="/inventario/costos" />} nativeButton={false} variant="outline">Costos de MP</Button>
           <Button render={<Link href="/inventario/movimientos" />} nativeButton={false} variant="outline">
             Historial
