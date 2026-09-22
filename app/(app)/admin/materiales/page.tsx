@@ -1,12 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/auth/get-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MaterialForm } from "@/components/admin/material-form";
+import { CatalogDeleteButton } from "@/components/admin/catalog-delete-button";
 
 export const dynamic = "force-dynamic";
 
 export default async function MaterialesAdminPage() {
   const supabase = await createClient();
+  const session = await getProfile();
+  const canDelete = session?.profile.is_super_admin === true;
   const { data: materials } = await supabase
     .from("materials")
     .select("id, code, name, material_type, unit_of_measure, min_stock, category")
@@ -37,6 +41,7 @@ export default async function MaterialesAdminPage() {
                 <TableHead>Tipo</TableHead>
                 <TableHead>Unidad</TableHead>
                 <TableHead className="text-right">Stock mínimo</TableHead>
+                {canDelete && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -48,6 +53,15 @@ export default async function MaterialesAdminPage() {
                   <TableCell>{m.material_type}</TableCell>
                   <TableCell>{m.unit_of_measure}</TableCell>
                   <TableCell className="text-right">{m.min_stock}</TableCell>
+                  {canDelete && (
+                    <TableCell className="text-right">
+                      <CatalogDeleteButton
+                        id={m.id}
+                        name={`${m.code} — ${m.name}`}
+                        kind="material"
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

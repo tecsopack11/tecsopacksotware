@@ -2,9 +2,76 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getProfile } from "@/lib/auth/get-profile";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error: string | null };
+
+const deleteCatalogItemSchema = z.object({
+  id: z.string().uuid(),
+});
+
+async function requireSuperAdmin() {
+  const session = await getProfile();
+  if (
+    !session?.profile.active ||
+    session.profile.role !== "admin" ||
+    !session.profile.is_super_admin
+  ) {
+    return null;
+  }
+  return session;
+}
+
+export async function eliminarMaterial(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = deleteCatalogItemSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { error: "Material no válido." };
+  if (!(await requireSuperAdmin())) {
+    return { error: "Solo un Super Admin puede eliminar materiales." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("materials").delete().eq("id", parsed.data.id);
+  if (error?.code === "23503") {
+    return {
+      error: "No se puede eliminar porque el material tiene movimientos o registros asociados.",
+    };
+  }
+  if (error) return { error: "No se pudo eliminar el material." };
+
+  revalidatePath("/admin/materiales");
+  revalidatePath("/inventario");
+  revalidatePath("/inventario/materia-prima");
+  revalidatePath("/inventario/costos");
+  return { error: null };
+}
+
+export async function eliminarProducto(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = deleteCatalogItemSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { error: "Producto no válido." };
+  if (!(await requireSuperAdmin())) {
+    return { error: "Solo un Super Admin puede eliminar productos." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("products").delete().eq("id", parsed.data.id);
+  if (error?.code === "23503") {
+    return {
+      error: "No se puede eliminar porque el producto tiene movimientos asociados.",
+    };
+  }
+  if (error) return { error: "No se pudo eliminar el producto." };
+
+  revalidatePath("/admin/productos");
+  revalidatePath("/inventario-pt");
+  return { error: null };
+}
 
 const materialSchema = z.object({
   code: z.string().min(1),
