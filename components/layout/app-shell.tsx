@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { CaliClock } from "@/components/layout/cali-clock";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
@@ -50,6 +51,7 @@ const NAV_ITEMS: (NavItem & { roles: Role[] })[] = [
     children: [
       { href: "/inventario/materia-prima", label: "Materia prima" },
       { href: "/inventario/movimientos", label: "Movimientos MP" },
+      { href: "/inventario/auditorias", label: "Auditorías" },
       { href: "/inventario/costos", label: "Costos de MP" },
       { href: "/inventario-pt", label: "Producto terminado" },
       { href: "/inventario-pt/movimientos", label: "Movimientos PT" },
@@ -148,6 +150,7 @@ export function AppShell({
               </SheetContent>
             </Sheet>
             <BackButton />
+            <CaliClock canAudit={role === "admin" || role === "supervisor"} />
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right text-sm">

@@ -14,6 +14,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      inventory_audit_schedule: {
+        Row: { id: boolean; starts_on: string }
+        Insert: { id?: boolean; starts_on?: string }
+        Update: { starts_on?: string }
+        Relationships: []
+      }
+      inventory_audits: {
+        Row: { id: string; due_date: string; started_at: string; started_by: string; completed_at: string | null; completed_by: string | null; responsible: string; items: Json }
+        Insert: { id?: string; due_date: string; started_by: string; responsible: string; items: Json }
+        Update: { items?: Json }
+        Relationships: []
+      }
       material_cost_revisions: {
         Row: import("@/lib/costs/schema").CostRevision
         Insert: never
@@ -784,6 +796,8 @@ export type Database = {
       }
     }
     Functions: {
+      start_inventory_audit: { Args: { p_due_date: string }; Returns: string }
+      complete_inventory_audit: { Args: { p_id: string; p_counts: Json }; Returns: undefined }
       create_priced_daily_inventory_register: {
         Args: { p_request_id: string; p_location_id: string; p_record_date: string; p_responsible: string; p_observations: string; p_rows: Json }
         Returns: number
