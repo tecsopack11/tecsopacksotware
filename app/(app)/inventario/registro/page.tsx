@@ -32,7 +32,7 @@ export default async function RegistroInventarioPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold">Registro rápido de materia prima</h1>
-        <p className="text-muted-foreground">Registra entradas con su precio y las salidas del día. El sistema calcula cantidades y promedios de costo.</p>
+        <p className="text-muted-foreground">Registra las entradas y salidas del día. Para enviar materia prima de bodega a máquina, usa Traslado.</p>
       </div>
       <RegistroDiarioForm
         requestId={randomUUID()}

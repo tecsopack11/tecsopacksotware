@@ -239,21 +239,12 @@ test("cost migration: transactions, permissions, revisions and daily prices", as
       },
     );
     await t.test(
-      "missing price rolls back daily entry; exit-only needs no price",
+      "daily entry without price leaves costs pending; exit-only needs no price",
       async () => {
         await asUser(operator);
-        await assert.rejects(
-          db.query(
-            "select public.create_daily_inventory_register($1,$2,$3,$4,$5)",
-            [
-              location,
-              today,
-              "Operario",
-              "",
-              [{ material_id: material, entry: 20, exit: 0 }],
-            ],
-          ),
-          /precio/,
+        await db.query(
+          "select public.create_daily_inventory_register($1,$2,$3,$4,$5)",
+          [location,today,"Operario","",[{ material_id: material, entry: 20, exit: 0 }]],
         );
         await db.query(
           "select public.create_daily_inventory_register($1,$2,$3,$4,$5)",
@@ -272,8 +263,12 @@ test("cost migration: transactions, permissions, revisions and daily prices", as
               "select id from public.inventory_movements where movement_type='entrada'",
             )
           ).rows.length,
-          2,
+          3,
         );
+        const pending = await db.query(`select m.id from public.inventory_movements m
+          left join public.material_cost_revisions c on c.movement_id=m.id
+          where m.movement_type='entrada' and c.id is null`);
+        assert.equal(pending.rows.length, 1);
       },
     );
     await t.test(

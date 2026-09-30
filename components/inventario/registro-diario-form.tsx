@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { RotateCcw, Save } from "lucide-react";
 import { crearRegistroDiario, type ActionState } from "@/lib/actions/inventory";
@@ -8,13 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 type Material = {
   id: string;
@@ -26,7 +21,7 @@ type Material = {
 
 type Location = { id: string; name: string };
 type Stock = Record<string, Record<string, number>>;
-type Quantities = Record<string, { entry: string; exit: string; unit_price?: string }>;
+type Quantities = Record<string, { entry: string; exit: string }>;
 
 const CATEGORY_LABEL: Record<string, string> = {
   principal: "Materiales principales",
@@ -79,7 +74,7 @@ export function RegistroDiarioForm({
     [materials],
   );
 
-  function change(materialId: string, field: "entry" | "exit" | "unit_price", value: string) {
+  function change(materialId: string, field: "entry" | "exit", value: string) {
     setQuantities((current) => ({
       ...current,
       [materialId]: { ...(current[materialId] ?? { entry: "", exit: "" }), [field]: value },
@@ -109,24 +104,16 @@ export function RegistroDiarioForm({
             <Input id="responsible" name="responsible" defaultValue={defaultResponsible} placeholder="Nombre" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="inventory_flow">Ubicación / flujo</Label>
+            <Label>Ubicación / flujo</Label>
             <input type="hidden" name="location_id" value={locationId} />
             <input type="hidden" name="movement_kind" value={isSale ? "sale" : "regular"} />
-            <Select
-              items={{
-                ...Object.fromEntries(locations.map((location) => [location.id, location.name])),
-                sale: "Venta de MP",
-              }}
-              value={flow}
-              onValueChange={(value) => value && changeFlow(value)}
-              required
-            >
-              <SelectTrigger id="inventory_flow"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}
-                <SelectItem value="sale">Venta de MP</SelectItem>
-              </SelectContent>
-            </Select>
+            <p className="text-sm text-muted-foreground">{locations.find((location) => location.id === warehouseLocationId)?.name ?? "Bodega principal"}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button render={<Link href="/inventario/traslado" />} nativeButton={false}>Traslado</Button>
+              <Button type="button" variant={isSale ? "secondary" : "outline"} onClick={() => changeFlow(isSale ? warehouseLocationId : "sale")}>
+                {isSale ? "Volver a entradas / salidas" : "Venta de MP"}
+              </Button>
+            </div>
             {isSale && <p className="text-xs text-muted-foreground">La venta se descuenta de la bodega principal.</p>}
           </div>
           <div className="space-y-2">
@@ -136,16 +123,16 @@ export function RegistroDiarioForm({
         </CardContent>
       </Card>
 
-      <p className="text-sm text-muted-foreground">En cada entrada indica el precio por la unidad del material (por ejemplo, COP/kg). Si hubo dos compras a precios distintos, guárdalas por separado. Los gastos adicionales se pueden completar en Costos de MP.</p>
+      <p className="text-sm text-muted-foreground">Registra aquí las cantidades. Completa los precios y gastos en Costos MP.</p>
       <Card>
         <CardContent className="px-0">
           <div className="overflow-x-auto">
-            <div className="min-w-[920px]">
-              <div className="grid grid-cols-[minmax(260px,1fr)_repeat(6,110px)] gap-2 px-4 pb-2 text-center text-xs font-semibold text-white">
+            <div className="min-w-[810px]">
+              <div className="grid grid-cols-[minmax(260px,1fr)_repeat(5,110px)] gap-2 px-4 pb-2 text-center text-xs font-semibold text-white">
                 <span />
                 <span className="rounded-md bg-primary px-2 py-1.5">Inv. inicial</span>
                 <span className="rounded-md bg-primary px-2 py-1.5">Entradas</span>
-                <span className="rounded-md bg-primary px-2 py-1.5">Precio COP / ud.</span>
+
                 <span className="rounded-md bg-ingreso px-2 py-1.5">Total</span>
                 <span className="rounded-md bg-primary px-2 py-1.5">Salidas</span>
                 <span className="rounded-md bg-ingreso px-2 py-1.5">Inv. final</span>
@@ -164,7 +151,7 @@ export function RegistroDiarioForm({
                       const total = initial + entry;
                       const final = total - exit;
                       return (
-                        <div key={material.id} className="grid grid-cols-[minmax(260px,1fr)_repeat(6,110px)] items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">
+                        <div key={material.id} className="grid grid-cols-[minmax(260px,1fr)_repeat(5,110px)] items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5">
                           <div>
                             <p className="font-medium leading-tight">{material.name}</p>
                             <p className="text-xs text-muted-foreground">{material.code} · Unidad: {material.unit}</p>
@@ -182,16 +169,6 @@ export function RegistroDiarioForm({
                             disabled={isSale}
                             className="text-center"
                             aria-label={`Entrada de ${material.name}`}
-                          />
-                          <Input
-                            name={`unit_price.${material.id}`}
-                            type="number" inputMode="decimal" min="0.000001" max="999999999" step="0.000001"
-                            placeholder="Precio" required={entry > 0 && !isSale}
-                            value={quantities[material.id]?.unit_price ?? ""}
-                            onChange={(event) => change(material.id, "unit_price", event.target.value)}
-                            disabled={isSale || entry <= 0}
-                            className="text-center"
-                            aria-label={`Precio en COP por ${material.unit} de ${material.name}`}
                           />
                           <Input value={total} readOnly tabIndex={-1} className="border-ingreso/30 bg-accent/60 text-center font-medium" aria-label={`Total de ${material.name}`} />
                           <Input

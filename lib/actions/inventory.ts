@@ -10,7 +10,6 @@ export type ActionState = { error: string | null };
 const dailyRowSchema = z.object({
   material_id: z.string().uuid(),
   entry: z.number().nonnegative(),
-  unit_price: z.number().positive().max(999_999_999).optional(),
   exit: z.number().nonnegative(),
 });
 
@@ -31,7 +30,7 @@ export async function crearRegistroDiario(
   const rows: z.infer<typeof dailyRowSchema>[] = [];
 
   for (const [key, value] of formData.entries()) {
-    const match = /^(entry|exit|unit_price)\.([0-9a-f-]{36})$/.exec(key);
+    const match = /^(entry|exit)\.([0-9a-f-]{36})$/.exec(key);
     if (!match || typeof value !== "string" || value.trim() === "") continue;
 
     const quantity = Number(value);
@@ -45,7 +44,7 @@ export async function crearRegistroDiario(
       row = { material_id: materialId, entry: 0, exit: 0 };
       rows.push(row);
     }
-    row[field as "entry" | "exit" | "unit_price"] = quantity;
+    row[field as "entry" | "exit"] = quantity;
   }
 
   const parsed = dailyRegisterSchema.safeParse({
@@ -60,10 +59,6 @@ export async function crearRegistroDiario(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
-  }
-
-  if (parsed.data.rows.some((row) => row.entry > 0 && !row.unit_price)) {
-    return { error: "Indica el precio en COP por unidad de cada material que ingresa." };
   }
 
   if (parsed.data.movement_kind === "sale" && parsed.data.rows.some((row) => row.entry > 0)) {

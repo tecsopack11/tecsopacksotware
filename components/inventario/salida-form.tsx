@@ -46,9 +46,11 @@ export function SalidaForm({
   stockLines,
   destinations,
   redirectTo,
+  transferOnly = false,
 }: {
   stockLines: StockLine[];
   destinations: Option[];
+  transferOnly?: boolean;
   redirectTo?: "/inventario/materia-prima" | "/planta";
 }) {
   const [state, formAction, pending] = useActionState(crearSalidaTraslado, initialState);
@@ -75,12 +77,12 @@ export function SalidaForm({
   return (
     <Card className="max-w-xl">
       <CardHeader>
-        <CardTitle>Salida / Traslado de materia prima</CardTitle>
+        <CardTitle>{transferOnly ? "Traslado de bodega a máquina" : "Salida / Traslado de materia prima"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
           {redirectTo && <input type="hidden" name="redirect_to" value={redirectTo} />}
-          <div className="space-y-2">
+          {transferOnly ? <input type="hidden" name="movement_type" value="traslado" /> : <div className="space-y-2">
             <Label htmlFor="movement_type">Tipo de movimiento</Label>
             <Select
               name="movement_type"
@@ -97,10 +99,10 @@ export function SalidaForm({
                 <SelectItem value="consumo">Consumo en máquina</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div>}
 
           <div className="space-y-2">
-            <Label htmlFor="stock_line">Material / lote / ubicación de origen</Label>
+            <Label htmlFor="stock_line">{transferOnly ? "Materia prima en bodega" : "Material / lote / ubicación de origen"}</Label>
             <Combobox
               items={stockLineItems}
               value={selectedStockItem}
@@ -122,7 +124,7 @@ export function SalidaForm({
             </Combobox>
             {selected && (
               <p className="text-xs text-muted-foreground">
-                Disponible: {selected.quantity.toLocaleString("es-CL")} {selected.unit}
+                Disponible: {selected.quantity.toLocaleString("es-CO")} {selected.unit}
               </p>
             )}
           </div>
@@ -132,10 +134,10 @@ export function SalidaForm({
           <input type="hidden" name="from_location_id" value={selected?.from_location_id ?? ""} />
 
           <div className="space-y-2">
-            <Label htmlFor="to_location_id">Destino</Label>
-            <Combobox items={destinationItems} name="to_location_id">
+            <Label htmlFor="to_location_id">{transferOnly ? "Máquina de destino" : "Destino"}</Label>
+            <Combobox items={destinationItems} name="to_location_id" required={transferOnly}>
               <ComboboxTrigger id="to_location_id">
-                <ComboboxValue placeholder="Selecciona destino (traslado/consumo)" />
+                <ComboboxValue placeholder="Selecciona el destino" />
               </ComboboxTrigger>
               <ComboboxContent
                 searchPlaceholder="Buscar ubicación..."
@@ -175,7 +177,7 @@ export function SalidaForm({
           )}
 
           <Button type="submit" className="w-full" disabled={pending || !selected}>
-            {pending ? "Guardando..." : "Registrar movimiento"}
+            {pending ? "Guardando..." : transferOnly ? "Enviar a máquina" : "Registrar movimiento"}
           </Button>
         </form>
       </CardContent>

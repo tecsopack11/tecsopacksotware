@@ -1,0 +1,262 @@
+[
+  {
+    "fila_excel": 4,
+    "categoria": "Materia prima",
+    "material": "ALTA DENCIDAD",
+    "cantidad_kg": 9725.0,
+    "precio_cop_kg": 5810.0,
+    "valor_cop": 56502250.0,
+    "celda_saldo": "FI4",
+    "code": "PEAD-01"
+  },
+  {
+    "fila_excel": 5,
+    "categoria": "Materia prima",
+    "material": "CARBONATO",
+    "cantidad_kg": 2325.0,
+    "precio_cop_kg": 2330.0,
+    "valor_cop": 5417250.0,
+    "celda_saldo": "FI5",
+    "code": "CARB-01"
+  },
+  {
+    "fila_excel": 6,
+    "categoria": "Materia prima",
+    "material": "LINEAL",
+    "cantidad_kg": 1200.0,
+    "precio_cop_kg": 6050.0,
+    "valor_cop": 7260000.0,
+    "celda_saldo": "FI6",
+    "code": "LINEAL-01"
+  },
+  {
+    "fila_excel": 7,
+    "categoria": "Materia prima",
+    "material": "ADITIVO/Biodegradable",
+    "cantidad_kg": 26.55,
+    "precio_cop_kg": 74000.0,
+    "valor_cop": 1964700.0,
+    "celda_saldo": "FI7",
+    "code": "BIO-01"
+  },
+  {
+    "fila_excel": 8,
+    "categoria": "Materia prima",
+    "material": "BAJA",
+    "cantidad_kg": 1000.0,
+    "precio_cop_kg": 7600.0,
+    "valor_cop": 7600000.0,
+    "celda_saldo": "FI8",
+    "code": "PEBD-01"
+  },
+  {
+    "fila_excel": 9,
+    "categoria": "Materia prima",
+    "material": "RECUPERADO BEIGE",
+    "cantidad_kg": 1425.4,
+    "precio_cop_kg": 3500.0,
+    "valor_cop": 4988900.0,
+    "celda_saldo": "FI9",
+    "code": "REC-BEIGE"
+  },
+  {
+    "fila_excel": 10,
+    "categoria": "Materia prima",
+    "material": "RECUPERADO BLANCO",
+    "cantidad_kg": 990.0,
+    "precio_cop_kg": 3500.0,
+    "valor_cop": 3465000.0,
+    "celda_saldo": "FI10",
+    "code": "REC-BLANCO"
+  },
+  {
+    "fila_excel": 14,
+    "categoria": "Pigmento",
+    "material": "BLANCO",
+    "cantidad_kg": 225.0,
+    "precio_cop_kg": 11500.0,
+    "valor_cop": 2587500.0,
+    "celda_saldo": "FI14",
+    "code": "PIG-BLANCO"
+  },
+  {
+    "fila_excel": 15,
+    "categoria": "Pigmento",
+    "material": "BEIGE",
+    "cantidad_kg": 125.0,
+    "precio_cop_kg": 16000.0,
+    "valor_cop": 2000000.0,
+    "celda_saldo": "FI15",
+    "code": "PIG-BEIGE"
+  },
+  {
+    "fila_excel": 16,
+    "categoria": "Pigmento",
+    "material": "VERDE OSCURO",
+    "cantidad_kg": 9.15,
+    "precio_cop_kg": 15600.0,
+    "valor_cop": 142740.0,
+    "celda_saldo": "FI16",
+    "code": "PIG-VERDE-OSC"
+  },
+  {
+    "fila_excel": 17,
+    "categoria": "Pigmento",
+    "material": "VERDE CLARO",
+    "cantidad_kg": 25.0,
+    "precio_cop_kg": 15600.0,
+    "valor_cop": 390000.0,
+    "celda_saldo": "FI17",
+    "code": "PIG-VERDE-CLA"
+  },
+  {
+    "fila_excel": 18,
+    "categoria": "Pigmento",
+    "material": "AZUL",
+    "cantidad_kg": 0.0,
+    "precio_cop_kg": 15000.0,
+    "valor_cop": 0.0,
+    "celda_saldo": "FI18",
+    "code": "PIG-AZUL"
+  },
+  {
+    "fila_excel": 19,
+    "categoria": "Pigmento",
+    "material": "NARANJA",
+    "cantidad_kg": 6.55,
+    "precio_cop_kg": 13300.0,
+    "valor_cop": 87115.0,
+    "celda_saldo": "FI19",
+    "code": "PIG-NARANJA"
+  },
+  {
+    "fila_excel": 20,
+    "categoria": "Pigmento",
+    "material": "AMARILLO",
+    "cantidad_kg": 14.15,
+    "precio_cop_kg": 15300.0,
+    "valor_cop": 216495.0,
+    "celda_saldo": "FI20",
+    "code": "PIG-AMARILLO"
+  },
+  {
+    "fila_excel": 21,
+    "categoria": "Pigmento",
+    "material": "NEGRO",
+    "cantidad_kg": 20.3,
+    "precio_cop_kg": 5300.0,
+    "valor_cop": 107590.0,
+    "celda_saldo": "FI21",
+    "code": "PIG-NEGRO"
+  },
+  {
+    "fila_excel": 22,
+    "categoria": "Pigmento",
+    "material": "ROJO",
+    "cantidad_kg": 3.75,
+    "precio_cop_kg": 20600.0,
+    "valor_cop": 77250.0,
+    "celda_saldo": "FI22",
+    "code": "PIG-ROJO"
+  },
+  {
+    "fila_excel": 26,
+    "categoria": "Tinta",
+    "material": "POLY AMA MEDIO A20213 17K",
+    "cantidad_kg": 0.0,
+    "precio_cop_kg": 22868.0,
+    "valor_cop": 0.0,
+    "celda_saldo": "FI26",
+    "code": "TIN-A20213"
+  },
+  {
+    "fila_excel": 27,
+    "categoria": "Tinta",
+    "material": "POLY AZUL A20342 17K / T. POLY AZUL",
+    "cantidad_kg": 17.0,
+    "precio_cop_kg": 31742.0,
+    "valor_cop": 539614.0,
+    "celda_saldo": "FI27",
+    "code": "TIN-A20342"
+  },
+  {
+    "fila_excel": 28,
+    "categoria": "Tinta",
+    "material": "POLY AZUL PROCESS A20240 17K",
+    "cantidad_kg": 17.0,
+    "precio_cop_kg": 26476.0,
+    "valor_cop": 450092.0,
+    "celda_saldo": "FI28",
+    "code": "TIN-A20240"
+  },
+  {
+    "fila_excel": 29,
+    "categoria": "Tinta",
+    "material": "POLY BLANCO A20201 22K / T. POLY BLANCO",
+    "cantidad_kg": 22.0,
+    "precio_cop_kg": 19606.0,
+    "valor_cop": 431332.0,
+    "celda_saldo": "FI29",
+    "code": "TIN-A20201"
+  },
+  {
+    "fila_excel": 30,
+    "categoria": "Tinta",
+    "material": "POLY NARANJA P-021C A20621 17K",
+    "cantidad_kg": 17.0,
+    "precio_cop_kg": 22595.0,
+    "valor_cop": 384115.0,
+    "celda_saldo": "FI30",
+    "code": "TIN-A20621"
+  },
+  {
+    "fila_excel": 31,
+    "categoria": "Tinta",
+    "material": "POLY NEGRO INTENSO A20470 / T. POLY",
+    "cantidad_kg": 119.0,
+    "precio_cop_kg": 22918.0,
+    "valor_cop": 2727242.0,
+    "celda_saldo": "FI31",
+    "code": "TIN-A20470"
+  },
+  {
+    "fila_excel": 32,
+    "categoria": "Tinta",
+    "material": "POLY ROJO P-485 A20125 / T. POLY",
+    "cantidad_kg": 51.0,
+    "precio_cop_kg": 26901.0,
+    "valor_cop": 1371951.0,
+    "celda_saldo": "FI32",
+    "code": "TIN-A20125"
+  },
+  {
+    "fila_excel": 33,
+    "categoria": "Tinta",
+    "material": "T. POLY MAGENTA PROCESS A20236 17K",
+    "cantidad_kg": 17.0,
+    "precio_cop_kg": 22508.0,
+    "valor_cop": 382636.0,
+    "celda_saldo": "FI33",
+    "code": "TIN-A20236"
+  },
+  {
+    "fila_excel": 34,
+    "categoria": "Tinta",
+    "material": "POLY AMA PROCESS A20210 17K",
+    "cantidad_kg": 17.0,
+    "precio_cop_kg": 24420.0,
+    "valor_cop": 415140.0,
+    "celda_saldo": "FI34",
+    "code": "TIN-A20210"
+  },
+  {
+    "fila_excel": 38,
+    "categoria": "Solvente",
+    "material": "SOLVENTE ALCOHOL INDUSTRIAL AL 90%",
+    "cantidad_kg": 1400.0,
+    "precio_cop_kg": 6979.0,
+    "valor_cop": 9770600.0,
+    "celda_saldo": "FI38",
+    "code": "SOLV-01"
+  }
+]
