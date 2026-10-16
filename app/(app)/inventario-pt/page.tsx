@@ -16,9 +16,9 @@ type ProductRow = {
   min_stock: number;
 };
 
-function ProductCard({ product, total }: { product: ProductRow; total: number }) {
+function ProductCard({ product, total }: { product: ProductRow; total: number | null }) {
   const status =
-    product.min_stock > 0 && total < product.min_stock
+    total === null ? "pendiente" : product.min_stock > 0 && total < product.min_stock
       ? "bajo"
       : product.min_stock > 0 && total < product.min_stock * 1.25
         ? "cerca"
@@ -43,11 +43,16 @@ function ProductCard({ product, total }: { product: ProductRow; total: number })
             status === "cerca" && "text-warning",
           )}
         >
-          {total.toLocaleString("es-CO")} {product.unit_of_measure}
+          {total === null ? "POR DILIGENCIAR" : `${total.toLocaleString("es-CO")} ${product.unit_of_measure}`}
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">
+        {total === null ? (
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-muted-foreground">Planta debe registrar la existencia inicial en {product.unit_of_measure}. Sin movimientos registrados.</p>
+            <Link className="text-sm underline" href={`/inventario-pt/entradas/nueva?product=${product.id}&initial=1`}>DILIGENCIAR EXISTENCIA</Link>
+          </div>
+        ) : <div className="mt-1 text-xs text-muted-foreground">
           Mínimo: {product.min_stock.toLocaleString("es-CO")} {product.unit_of_measure}
-        </div>
+        </div>}
         {status === "bajo" && (
           <Badge variant="destructive" className="mt-2">
             Pedir / fabricar
@@ -66,15 +71,20 @@ function ProductCard({ product, total }: { product: ProductRow; total: number })
 export default async function InventarioPTPage() {
   const supabase = await createClient();
 
-  const [{ data: stock }, { data: products }, { data: locations }] = await Promise.all([
+  const [{ data: stock, error: stockError }, { data: products, error: productsError }, { data: locations, error: locationsError }] = await Promise.all([
     supabase.from("v_product_stock").select("product_id, location_id, quantity"),
     supabase
       .from("products")
-      .select("id, name, code, unit_of_measure, min_stock")
+      .select("id, name, code, unit_of_measure, min_stock, product_movements(count)")
       .eq("active", true)
+      .is("product_movements.cancelled_at", null)
       .order("name"),
     supabase.from("locations").select("id, name").eq("type", "almacen_pt"),
   ]);
+
+  if (stockError || productsError || locationsError) {
+    return <p role="alert" className="text-destructive">No se pudo consultar el inventario de producto terminado. Intenta nuevamente.</p>;
+  }
 
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
   const locationById = new Map((locations ?? []).map((l) => [l.id, l]));
@@ -100,9 +110,12 @@ export default async function InventarioPTPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Inventario de producto terminado</h1>
-          <p className="text-muted-foreground">Existencia actual por almacén.</p>
+          <p className="text-muted-foreground">Existencia actual por almacén. Las referencias sin movimientos quedan por diligenciar por planta.</p>
         </div>
         <div className="flex gap-2">
+          <Button render={<Link href="/inventario-pt/catalogo" />} nativeButton={false} variant="outline">
+            Catálogo genérico
+          </Button>
           <Button render={<Link href="/inventario-pt/movimientos" />} nativeButton={false} variant="outline">
             Historial
           </Button>
@@ -117,7 +130,7 @@ export default async function InventarioPTPage() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {(products ?? []).map((p) => (
-          <ProductCard key={p.id} product={p} total={totalByProduct.get(p.id) ?? 0} />
+          <ProductCard key={p.id} product={p} total={p.product_movements[0]?.count > 0 ? totalByProduct.get(p.id) ?? 0 : null} />
         ))}
         {(products ?? []).length === 0 && (
           <p className="col-span-full text-sm text-muted-foreground">

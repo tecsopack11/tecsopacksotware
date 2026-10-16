@@ -1,3 +1,4 @@
+import { compareMaterials, materialName, materialType, matchesMaterial, MATERIAL_TYPES } from "@/lib/materials/catalog";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,12 @@ function buildInventarioHref(params: {
   categoria?: string | null;
   area?: string | null;
   ubicacion?: string | null;
+  q?: string | null;
+  tipo?: string | null;
 }) {
   const sp = new URLSearchParams();
+  if (params.q) sp.set("q", params.q);
+  if (params.tipo) sp.set("tipo", params.tipo);
   if (params.categoria) sp.set("categoria", params.categoria);
   if (params.area) sp.set("area", params.area);
   if (params.ubicacion) sp.set("ubicacion", params.ubicacion);
@@ -64,9 +69,6 @@ const CATEGORY_LABEL: Record<MaterialCategory, string> = {
   solvente: "Solventes",
 };
 
-// Orden explícito pedido para los materiales principales; cualquier otro
-// material "principal" que se agregue después cae al final, alfabético.
-const PRINCIPAL_ORDER = ["PEAD-01", "CARB-01", "BIO-01", "LINEAL-01", "PEBD-01", "REC-BEIGE", "REC-BLANCO"];
 
 type MaterialRow = {
   id: string;
@@ -75,6 +77,7 @@ type MaterialRow = {
   unit_of_measure: string;
   min_stock: number;
   category: MaterialCategory;
+  material_type: string;
 };
 
 function MaterialCard({
@@ -96,7 +99,7 @@ function MaterialCard({
     <Link
       href={`/inventario/materia-prima/${material.id}`}
       className="block rounded-xl outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50"
-      aria-label={`Ver detalle e historial de ${material.name}`}
+      aria-label={`Ver detalle e historial de ${materialName(material)}`}
     >
       <Card
         className={cn(
@@ -107,7 +110,8 @@ function MaterialCard({
         )}
       >
         <CardHeader className="pb-1">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{material.name}</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{materialName(material)}</CardTitle>
+          <div className="text-xs text-muted-foreground">{materialType(material)}</div>
         </CardHeader>
         <CardContent>
           <div
@@ -148,9 +152,11 @@ function isMaterialCategory(value: string): value is MaterialCategory {
 export default async function InventarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; area?: string; ubicacion?: string }>;
+  searchParams: Promise<{ categoria?: string; area?: string; ubicacion?: string; q?: string; tipo?: string }>;
 }) {
-  const { categoria, area, ubicacion } = await searchParams;
+  const { categoria, area, ubicacion, q = "", tipo } = await searchParams;
+  const activeType = MATERIAL_TYPES.find((type) => type === tipo) ?? null;
+  const filterHref = (params: Parameters<typeof buildInventarioHref>[0]) => buildInventarioHref({ q, tipo: activeType, ...params });
   const activeCategory = categoria && isMaterialCategory(categoria) ? categoria : null;
   const activeArea = area && isArea(area) ? area : null;
   const activeLocationType = ubicacion && isLocationType(ubicacion) ? ubicacion : null;
@@ -165,7 +171,7 @@ export default async function InventarioPage({
       supabase.from("v_inventory_stock").select("material_id, lot_id, location_id, quantity"),
       supabase
         .from("materials")
-        .select("id, name, code, unit_of_measure, min_stock, category")
+        .select("id, name, code, unit_of_measure, min_stock, category, material_type")
         .eq("active", true)
         .order("name"),
       supabase.from("locations").select("id, name, type"),
@@ -201,27 +207,12 @@ export default async function InventarioPage({
 
   const materialsByCategory = new Map<MaterialCategory, MaterialRow[]>();
   for (const m of materials ?? []) {
+    if (!matchesMaterial(m, q, activeType)) continue;
     const list = materialsByCategory.get(m.category) ?? [];
     list.push(m);
     materialsByCategory.set(m.category, list);
   }
-  const principales = materialsByCategory.get("principal");
-  if (principales) {
-    principales.sort((a, b) => {
-      const ia = PRINCIPAL_ORDER.indexOf(a.code);
-      const ib = PRINCIPAL_ORDER.indexOf(b.code);
-      if (ia === -1 && ib === -1) return a.name.localeCompare(b.name);
-      if (ia === -1) return 1;
-      if (ib === -1) return -1;
-      return ia - ib;
-    });
-  }
-
-function materialSortKey(material: MaterialRow): number {
-    if (material.category !== "principal") return 0;
-    const idx = PRINCIPAL_ORDER.indexOf(material.code);
-    return idx === -1 ? PRINCIPAL_ORDER.length : idx;
-  }
+  for (const list of materialsByCategory.values()) list.sort(compareMaterials);
 
   const rows = (stock ?? [])
     .filter((row) => row.material_id && row.location_id)
@@ -232,23 +223,20 @@ function materialSortKey(material: MaterialRow): number {
       lot: row.lot_id ? lotById.get(row.lot_id) : undefined,
     }))
     .filter((r) => r.material && r.location)
+    .filter((r) => matchesMaterial(r.material!, q, activeType))
     .filter((r) => !activeCategory || r.material!.category === activeCategory)
     .filter((r) => !activeArea || AREA_BY_LOCATION_TYPE[r.location!.type] === activeArea)
     .filter((r) => !activeLocationType || r.location!.type === activeLocationType)
     .sort((a, b) => {
-      const catDiff = CATEGORY_ORDER.indexOf(a.material!.category) - CATEGORY_ORDER.indexOf(b.material!.category);
-      if (catDiff !== 0) return catDiff;
-      const materialDiff = materialSortKey(a.material!) - materialSortKey(b.material!);
-      if (materialDiff !== 0) return materialDiff;
-      const nameDiff = a.material!.name.localeCompare(b.material!.name);
-      if (nameDiff !== 0) return nameDiff;
+      const materialDiff = compareMaterials(a.material!, b.material!);
+      if (materialDiff) return materialDiff;
       return a.location!.name.localeCompare(b.location!.name);
     });
 
   const visibleCategories = activeCategory ? [activeCategory] : CATEGORY_ORDER;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 uppercase">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Materia prima</h1>
@@ -278,9 +266,25 @@ function materialSortKey(material: MaterialRow): number {
         </div>
       </div>
 
+      <form action="/inventario/materia-prima" className="flex flex-wrap items-end gap-3">
+        {activeCategory && <input type="hidden" name="categoria" value={activeCategory} />}
+        {activeArea && <input type="hidden" name="area" value={activeArea} />}
+        {activeLocationType && <input type="hidden" name="ubicacion" value={activeLocationType} />}
+        <label className="grid gap-1 text-sm">BUSCAR MATERIAL O CÓDIGO
+          <input name="q" defaultValue={q} placeholder="NOMBRE O CÓDIGO" className="h-9 rounded-md border bg-background px-3 uppercase" />
+        </label>
+        <label className="grid gap-1 text-sm">TIPO
+          <select name="tipo" defaultValue={activeType ?? ""} className="h-9 rounded-md border bg-background px-3">
+            <option value="">TODOS LOS TIPOS</option>
+            {MATERIAL_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </label>
+        <Button type="submit">FILTRAR</Button>
+        <Link href="/inventario/materia-prima" className="px-3 py-2 text-sm underline">LIMPIAR</Link>
+      </form>
       <div className="flex flex-wrap gap-2">
         <Button
-          render={<Link href={buildInventarioHref({ area: activeArea, ubicacion: activeLocationType })} />}
+          render={<Link href={filterHref({ area: activeArea, ubicacion: activeLocationType })} />}
           nativeButton={false}
           variant={activeCategory === null ? "secondary" : "outline"}
           size="sm"
@@ -292,7 +296,7 @@ function materialSortKey(material: MaterialRow): number {
             key={category}
             render={
               <Link
-                href={buildInventarioHref({
+                href={filterHref({
                   categoria: category,
                   area: activeArea,
                   ubicacion: activeLocationType,
@@ -314,7 +318,7 @@ function materialSortKey(material: MaterialRow): number {
             key={a}
             render={
               <Link
-                href={buildInventarioHref({
+                href={filterHref({
                   categoria: activeCategory,
                   area: a,
                   ubicacion: activeLocationType,
@@ -331,6 +335,7 @@ function materialSortKey(material: MaterialRow): number {
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-foreground">{AREA_LABEL[topArea]}</h2>
+        {visibleCategories.every((category) => !materialsByCategory.get(category)?.length) && <p className="text-muted-foreground">NO HAY MATERIALES QUE COINCIDAN CON LOS FILTROS.</p>}
         {visibleCategories.map((category) => {
           const list = materialsByCategory.get(category);
           if (!list || list.length === 0) return null;
@@ -357,7 +362,7 @@ function materialSortKey(material: MaterialRow): number {
           <CardTitle>Existencia por ubicación</CardTitle>
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
-              render={<Link href={buildInventarioHref({ categoria: activeCategory })} />}
+              render={<Link href={filterHref({ categoria: activeCategory })} />}
               nativeButton={false}
               variant={activeArea === null ? "secondary" : "outline"}
               size="sm"
@@ -368,7 +373,7 @@ function materialSortKey(material: MaterialRow): number {
               <Button
                 key={a}
                 render={
-                  <Link href={buildInventarioHref({ categoria: activeCategory, area: a })} />
+                  <Link href={filterHref({ categoria: activeCategory, area: a })} />
                 }
                 nativeButton={false}
                 variant={activeArea === a ? "secondary" : "outline"}
@@ -381,7 +386,7 @@ function materialSortKey(material: MaterialRow): number {
           <div className="flex flex-wrap gap-2 pt-1">
             <Button
               render={
-                <Link href={buildInventarioHref({ categoria: activeCategory, area: activeArea })} />
+                <Link href={filterHref({ categoria: activeCategory, area: activeArea })} />
               }
               nativeButton={false}
               variant={activeLocationType === null ? "secondary" : "outline"}
@@ -394,7 +399,7 @@ function materialSortKey(material: MaterialRow): number {
                 key={type}
                 render={
                   <Link
-                    href={buildInventarioHref({
+                    href={filterHref({
                       categoria: activeCategory,
                       area: activeArea,
                       ubicacion: type,
@@ -438,7 +443,7 @@ function materialSortKey(material: MaterialRow): number {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {row.material!.name}{" "}
+                    {materialName(row.material!)}{" "}
                     <span className="text-muted-foreground">({row.material!.code})</span>
                   </TableCell>
                   <TableCell>{row.lot?.lot_code ?? "—"}</TableCell>

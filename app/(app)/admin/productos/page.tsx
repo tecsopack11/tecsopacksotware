@@ -21,7 +21,7 @@ export default async function ProductosAdminPage() {
       <ProductForm />
       <Card>
         <CardHeader>
-          <CardTitle>Productos ({products?.length ?? 0})</CardTitle>
+          <CardTitle>Productos ({(products?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -40,7 +40,7 @@ export default async function ProductosAdminPage() {
                   <TableCell>{p.code}</TableCell>
                   <TableCell>{p.name}</TableCell>
                   <TableCell>{p.unit_of_measure}</TableCell>
-                  <TableCell className="text-right">{p.min_stock}</TableCell>
+                  <TableCell className="text-right">{Number(p.min_stock).toLocaleString("es-CO")}</TableCell>
                   {canDelete && (
                     <TableCell className="text-right">
                       <CatalogDeleteButton

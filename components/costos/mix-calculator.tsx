@@ -138,8 +138,8 @@ export function MixCalculator({ materials }: { materials: Material[] }) {
           Agregar ingrediente
         </Button>
         <p className="text-sm">
-          Total: {totalPercent.toFixed(2)}% · MP por kg:{" "}
-          <strong>{formatCop(perKg)}</strong> · MP para {kg || "0"} kg de{" "}
+          Total: {totalPercent.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% · MP por kg:{" "}
+          <strong>{formatCop(perKg)}</strong> · MP para {Number(kg || "0").toLocaleString("es-CO", { maximumFractionDigits: 3 })} kg de{" "}
           {product.toLowerCase()}:{" "}
           <strong>
             {formatCop(perKg === null ? null : perKg * Number(kg))}

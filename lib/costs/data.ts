@@ -1,3 +1,4 @@
+import { materialName, compareMaterials } from "@/lib/materials/catalog";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth/get-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -41,5 +42,10 @@ export async function getCostSnapshot(): Promise<{
       error:
         "No se pudieron cargar los costos. Verifica que la migración 0011 esté aplicada y vuelve a intentar.",
     };
-  return { snapshot: data as unknown as CostSnapshot, error: null };
+  const snapshot = data as unknown as CostSnapshot;
+  // The RPC omits category: aliases use the real code, preserving database IDs.
+  snapshot.materials = snapshot.materials
+    .map((material) => ({ ...material, name: materialName(material) }))
+    .sort(compareMaterials);
+  return { snapshot, error: null };
 }

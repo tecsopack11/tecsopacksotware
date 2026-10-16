@@ -52,3 +52,32 @@ Operarios: capturar precio inicial en sus propias entradas. Supervisores y admin
 Pendientes: recetas persistentes y versionadas de lámina/bolsa, equivalencias por presentación, costo inicial validado para ajustes y saldos sin compras trazables, devoluciones vinculadas a su operación original, cierre mensual bloqueado y ajustes posteriores, costos inmutables de consumo por OP, producción intermedia y terminada, comparación estimado/real, tiempos de mano de obra, paros, energía y mantenimiento. La simulación actual no calcula estos costos de transformación.
 
 La valoración operativa propuesta debe conciliarse con el método que use contabilidad. Referencias de diseño: [NIC 2 — IFRS Foundation](https://www.ifrs.org/issued-standards/list-of-standards/ias-2-inventories/) y [OEE — Lean Enterprise Institute](https://www.lean.org/lexicon-terms/overall-equipment-effectiveness/).
+
+
+---
+
+# Costos de materia prima: revisión local
+
+Ruta: `/inventario/costos` (administrador o supervisor activo).
+
+- El bloque **PROMEDIO PONDERADO ANUAL** permite seleccionar un año y material. Se calcula por cada materia prima: suma del costo COP de sus compras / suma de las cantidades de esas compras con precio. No promedia precios sin ponderar cantidades.
+- Incluye gastos de importación y otros costos atribuibles registrados. Los impuestos recuperables siguen excluidos por la lógica vigente.
+- Conserva cada entrada por separado, sin límite de registros por material o año. El historial se pagina de 30 en 30 y el CSV exporta todo el resultado filtrado, no solo la página visible.
+- Las entradas sin precio se muestran como pendientes y se excluyen de numerador y denominador; las provisionales quedan identificadas. Si no hay compras valoradas, se muestra PENDIENTE, nunca un costo unitario cero.
+- El historial inicia con todo el año; puede consultarse solo el mes. El comparativo mensual y el cierre utilizan el mes indicado, independientemente del año del reporte anual.
+- La fecha del reporte es la fecha de compra. En entradas aún sin costo, se usa la fecha operativa; al completar el precio, su fecha de compra determina el año definitivo.
+- Se mantiene separado el promedio móvil operativo del inventario. Los consumos y traslados no reducen el promedio anual de compras.
+- El registro rápido crea una entrada nueva en una bodega activa y su costo de manera atómica, con identificador de reintento para impedir duplicar ese envío. Si la entrada ya existe, debe completarse desde el historial; no debe registrarse otra compra.
+- No se modifica la valoración histórica de las órdenes ni se inventan costos faltantes. Corregir precios recalcula el reporte; no implementa un cierre contable inmutable.
+
+## Validación
+
+ESLint del módulo y `npm run test:costs`: cálculos financieros, 1.500 compras sin truncamiento en el cálculo, pendientes sin cero, costos de importación, revisiones, permisos, atomicidad e idempotencia en PostgreSQL local mediante PGlite. No se ejecutaron escrituras en servicios remotos.
+
+## Recorrido sugerido
+
+1. Abrir `/inventario/costos?ano=2026` y revisar el panel anual.
+2. Seleccionar material y año; revisar cantidades con costo, compras pendientes y promedio por unidad.
+3. Consultar historial anual, cambiar a mensual y descargar CSV con formato decimal colombiano.
+4. Abrir una entrada existente para revisar/corregir precio sin sumar kilos otra vez.
+5. La creación de compras es una escritura de inventario: probarla únicamente con una base local antes de aceptar los cambios. La vista local puede seguir conectada a una base remota según su configuración.

@@ -1,3 +1,4 @@
+import { materialName, materialType } from "@/lib/materials/catalog";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -102,15 +103,15 @@ export default async function MaterialDetailPage({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 uppercase">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">{material.code}</Badge>
-            <Badge variant="secondary">{material.material_type}</Badge>
+            <Badge variant="secondary">{materialType(material)}</Badge>
             {!material.active && <Badge variant="destructive">Inactivo</Badge>}
           </div>
-          <h1 className="text-2xl font-semibold">{material.name}</h1>
+          <h1 className="text-2xl font-semibold">{materialName(material)}</h1>
           <p className="text-muted-foreground">
             Existencia, compras y recorrido completo de esta materia prima.
           </p>
@@ -202,7 +203,7 @@ export default async function MaterialDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Historial del material ({movements.length})</CardTitle>
+          <CardTitle>Historial del material ({movements.length.toLocaleString("es-CO")})</CardTitle>
           <p className="text-sm text-muted-foreground">
             Del movimiento más reciente al más antiguo. Máximo 500 registros.
           </p>

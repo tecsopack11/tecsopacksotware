@@ -63,7 +63,7 @@ export default async function MovimientosPTPage() {
                   <TableCell>{m.from?.name ?? "—"}</TableCell>
                   <TableCell>{m.to?.name ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    {Number(m.quantity).toLocaleString("es-CL")} {m.products?.unit_of_measure}
+                    {Number(m.quantity).toLocaleString("es-CO")} {m.products?.unit_of_measure}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {m.profiles?.full_name || "—"}

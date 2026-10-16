@@ -64,7 +64,7 @@ export default async function OeePage() {
               <Card className="hover:border-primary/50 transition-colors">
                 <CardHeader>
                   <CardTitle>{name}</CardTitle>
-                  <CardDescription>{results.length} turno(s) hoy</CardDescription>
+                  <CardDescription>{results.length.toLocaleString("es-CO")} turno(s) hoy</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-semibold">{formatPercent(avg.oee)}</div>

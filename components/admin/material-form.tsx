@@ -20,7 +20,7 @@ const initialState: ActionState = { error: null };
 export function MaterialForm() {
   const [state, formAction, pending] = useActionState(crearMaterial, initialState);
   return (
-    <Card>
+    <Card className="uppercase">
       <CardHeader>
         <CardTitle>Nuevo material</CardTitle>
       </CardHeader>
@@ -35,7 +35,7 @@ export function MaterialForm() {
             <Input id="name" name="name" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="material_type">Tipo</Label>
+            <Label htmlFor="material_type">Tipo base del material</Label>
             <Select
               name="material_type"
               defaultValue="resina"
@@ -44,7 +44,7 @@ export function MaterialForm() {
               <SelectTrigger id="material_type">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="uppercase">
                 <SelectItem value="resina">Resina</SelectItem>
                 <SelectItem value="masterbatch">Masterbatch</SelectItem>
                 <SelectItem value="aditivo">Aditivo</SelectItem>
@@ -62,7 +62,7 @@ export function MaterialForm() {
               <SelectTrigger id="unit_of_measure">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="uppercase">
                 <SelectItem value="kg">kg</SelectItem>
                 <SelectItem value="g">g</SelectItem>
                 <SelectItem value="ton">ton</SelectItem>
@@ -77,7 +77,7 @@ export function MaterialForm() {
             <Input id="min_stock" name="min_stock" type="number" step="0.01" min="0" defaultValue={0} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="category">Categoría (casillas de Inventario)</Label>
+            <Label htmlFor="category">Categoría de inventario</Label>
             <Select
               name="category"
               defaultValue="principal"
@@ -86,7 +86,7 @@ export function MaterialForm() {
               <SelectTrigger id="category">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="uppercase">
                 <SelectItem value="principal">Principales</SelectItem>
                 <SelectItem value="pigmento">Pigmentos</SelectItem>
                 <SelectItem value="tinta">Tintas</SelectItem>
@@ -95,6 +95,7 @@ export function MaterialForm() {
             </Select>
           </div>
           <div className="sm:col-span-2 space-y-2">
+            <p className="text-xs text-muted-foreground">Los pigmentos y tintas se identifican por su categoría. Para resinas y aditivos, selecciona el tipo base correspondiente.</p>
             {state.error && (
               <Alert variant="destructive">
                 <AlertDescription>{state.error}</AlertDescription>

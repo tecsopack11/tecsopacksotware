@@ -10,7 +10,7 @@ export function CostExport({
 }) {
   function download() {
     const encode = (value: string | number | null) => {
-      let text = value === null ? "Pendiente" : String(value);
+      let text = value === null ? "Pendiente" : typeof value === "number" ? value.toLocaleString("es-CO", { useGrouping: true, maximumFractionDigits: 6 }) : String(value);
       if (typeof value === "string" && /^[\s]*[=+@-]/.test(text))
         text = `'${text}`;
       return `"${text.replaceAll('"', '""')}"`;

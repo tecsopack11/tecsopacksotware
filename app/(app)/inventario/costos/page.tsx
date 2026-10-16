@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
 import { getCostSnapshot } from "@/lib/costs/data";
 import { bogotaDate } from "@/lib/costs/schema";
 import {
@@ -19,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CostExport } from "@/components/costos/cost-export";
 import { MixCalculator } from "@/components/costos/mix-calculator";
+import { QuickCostEntry } from "@/components/costos/quick-cost-entry";
 
 export const dynamic = "force-dynamic";
 const amount = (value: number) =>
@@ -29,28 +31,39 @@ export default async function MaterialCostsPage({
 }: {
   searchParams: Promise<{
     mes?: string;
+    ano?: string;
+    periodo?: string;
     material?: string;
     estado?: string;
     pagina?: string;
+    guardado?: string;
   }>;
 }) {
   const params = await searchParams;
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.mes ?? "")
     ? params.mes!
     : bogotaDate().slice(0, 7);
+  const year = /^(19|20|21)\d{2}$/.test(params.ano ?? "")
+    ? params.ano!
+    : month.slice(0, 4);
+  const annualHistory = params.periodo !== "mes";
+  const historyPeriod = annualHistory ? year : month;
   const { snapshot, error } = await getCostSnapshot();
   if (!snapshot)
     return (
       <div className="space-y-3">
-        <h1 className="text-2xl font-semibold">Costos de materia prima</h1>
+        <h1 className="text-2xl font-semibold">COSTOS DE MATERIA PRIMA</h1>
         <p role="alert" className="text-destructive">
           {error}
         </p>
       </div>
     );
-  const materials = [...snapshot.materials].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const materials = snapshot.materials;
+  const activeMaterials = materials.filter((material) => material.active);
+  const quickLocation =
+    snapshot.locations.find(
+      (location) => location.active && location.type === "bodega",
+    );
   const locations = new Map(snapshot.locations.map((l) => [l.id, l]));
   const internal = new Set(
     snapshot.locations
@@ -131,7 +144,11 @@ export default async function MaterialCostsPage({
     if (closing?.value === null) closingPending++;
     else closingValue += closing?.value ?? 0;
   }
-  const filtered = monthReceipts
+  const historyReceipts = receipts.filter((m) =>
+    receiptMonth(m).startsWith(historyPeriod) &&
+    (!params.material || m.material_id === params.material),
+  );
+  const filtered = historyReceipts
     .filter(
       (m) =>
         !params.estado ||
@@ -139,45 +156,78 @@ export default async function MaterialCostsPage({
           ? !prices.has(m.id)
           : prices.get(m.id)?.status === params.estado),
     )
-    .reverse();
+    .sort((a, b) => receiptMonth(b).localeCompare(receiptMonth(a)) ||
+      (prices.get(b.id)?.purchase_date ?? b.effective_date).localeCompare(prices.get(a.id)?.purchase_date ?? a.effective_date) ||
+      b.created_at.localeCompare(a.created_at) || b.valuation_sequence - a.valuation_sequence);
   const pageCount = Math.max(1, Math.ceil(filtered.length / 30));
   const page = Math.min(
     pageCount,
     Math.max(1, Number.parseInt(params.pagina ?? "1", 10) || 1),
   );
   const pageHref = (n: number) =>
-    `/inventario/costos?${new URLSearchParams({ mes: month, material: params.material ?? "", estado: params.estado ?? "", pagina: String(n) })}`;
+    `/inventario/costos?${new URLSearchParams({ mes: month, ano: year, periodo: annualHistory ? "ano" : "mes", material: params.material ?? "", estado: params.estado ?? "", pagina: String(n) })}`;
   const optionClass =
     "h-10 rounded-md border border-input bg-background px-3 text-sm";
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Costos de materia prima</h1>
+          <h1 className="text-2xl font-semibold">COSTOS DE MATERIA PRIMA</h1>
           <p className="text-muted-foreground">
-            Compras del mes, promedio del inventario y valor disponible en
-            planta.
+            PROMEDIO PONDERADO ANUAL, HISTORIAL DE COMPRAS Y VALOR DISPONIBLE EN PLANTA.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
             render={<Link href="/inventario/registro" />}
             nativeButton={false}
-          >
-            Ingreso con precio
-          </Button>
-          <Button
             variant="outline"
-            render={<Link href="/inventario/costos/compra" />}
-            nativeButton={false}
           >
-            Compra con gastos
+            Registro diario de inventario
           </Button>
         </div>
       </div>
+      {params.guardado && (
+        <p
+          role="status"
+          className="rounded-md border border-primary/30 bg-accent p-3"
+        >
+          Compra y costo guardados. El historial y el promedio ya fueron
+          actualizados.
+        </p>
+      )}
+      {activeMaterials.length > 0 && quickLocation ? (
+        <QuickCostEntry
+          materials={activeMaterials.map((material) => ({
+            id: material.id,
+            name: material.name,
+            code: material.code,
+            unit: material.unit_of_measure,
+          }))}
+          locationId={quickLocation.id}
+          today={bogotaDate()}
+          requestId={randomUUID()}
+        />
+      ) : (
+        <p className="rounded-md border p-3 text-sm text-muted-foreground">
+          Registra al menos un material y una ubicación de bodega para ingresar
+          compras.
+        </p>
+      )}
       <form className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
-          Mes de compra
+          AÑO DEL PROMEDIO Y DEL HISTORIAL
+          <input aria-label="Año de compras" type="number" name="ano" min="1900" max="2199" defaultValue={year} className={optionClass} required />
+        </label>
+        <label className="grid gap-1 text-sm">
+          PERÍODO DEL HISTORIAL
+          <select name="periodo" defaultValue={annualHistory ? "ano" : "mes"} className={optionClass}>
+            <option value="ano">TODO EL AÑO</option>
+            <option value="mes">MES SELECCIONADO</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">
+          MES PARA COMPARATIVO Y CIERRE
           <input
             aria-label="Mes de compra"
             type="month"
@@ -217,6 +267,43 @@ export default async function MaterialCostsPage({
         </label>
         <Button variant="outline">Consultar</Button>
       </form>
+      <Card>
+        <CardHeader>
+          <CardTitle>PROMEDIO PONDERADO ANUAL · {year}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            SUMA DEL VALOR DE COMPRAS ÷ SUMA DE LA CANTIDAD CON COSTO, POR MATERIAL.
+            Incluye gastos registrados y costos provisionales. Las entradas sin precio quedan pendientes y no se toman como cero.
+            El año corresponde a la fecha de compra; para entradas pendientes se usa la fecha operativa.
+          </p>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>MATERIA PRIMA</TableHead><TableHead>ENTRADAS</TableHead>
+              <TableHead>CANTIDAD CON COSTO</TableHead><TableHead>VALOR DE COMPRAS</TableHead>
+              <TableHead>PROMEDIO / UNIDAD</TableHead><TableHead>SIN PRECIO</TableHead><TableHead>PROVISIONALES</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{visibleMaterials.map((material) => {
+              const purchases = receipts.filter((m) => m.material_id === material.id && receiptMonth(m).startsWith(year));
+              const summary = weightedPurchaseAverage(purchases.map((m) => ({ quantity: m.quantity, total: prices.get(m.id)?.total_cop ?? null })));
+              const pendingQuantity = purchases.filter((m) => !prices.has(m.id)).reduce((sum, m) => sum + m.quantity, 0);
+              const provisional = purchases.filter((m) => prices.get(m.id)?.status === "provisional").length;
+              return <TableRow key={material.id}>
+                <TableCell>{material.name.toLocaleUpperCase("es-CO")}</TableCell>
+                <TableCell>{amount(purchases.length)}</TableCell>
+                <TableCell>{amount(summary.quantity)} {material.unit_of_measure}</TableCell>
+                <TableCell>{formatCop(summary.quantity > 0 ? summary.total : null)}</TableCell>
+                <TableCell>{formatCop(summary.average)} / {material.unit_of_measure}
+                  {(summary.pending > 0 || provisional > 0) && <span className="block text-xs text-muted-foreground">PROMEDIO INCOMPLETO O PROVISIONAL</span>}
+                </TableCell>
+                <TableCell>{summary.pending} · {amount(pendingQuantity)} {material.unit_of_measure}</TableCell>
+                <TableCell>{provisional}</TableCell>
+              </TableRow>;
+            })}</TableBody>
+          </Table>
+          <p className="mt-3 text-xs text-muted-foreground">Puede registrar tantas compras como necesite. Los consumos y traslados no alteran este promedio de compras; el promedio móvil del inventario se consulta por separado abajo. Las correcciones posteriores de precios actualizan el reporte anual; no es un cierre contable bloqueado.</p>
+        </CardContent>
+      </Card>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           [
@@ -315,7 +402,7 @@ export default async function MaterialCostsPage({
                     <TableCell>
                       {variation === null
                         ? "—"
-                        : `${variation > 0 ? "+" : ""}${variation.toFixed(1)}%`}
+                        : `${variation > 0 ? "+" : ""}${variation.toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
                     </TableCell>
                     <TableCell>{now.pending || "—"}</TableCell>
                   </TableRow>
@@ -331,7 +418,7 @@ export default async function MaterialCostsPage({
           <p className="text-sm text-muted-foreground">
             Cantidad y valor por área, usando el promedio global de cada
             material. Esta vista siempre es actual; el filtro de mes corresponde
-            a compras. Incluye costos provisionales y se reconstruye al corregir
+            al comparativo mensual y al cierre. Incluye costos provisionales y se reconstruye al corregir
             precios o cancelar movimientos.
           </p>
         </CardHeader>
@@ -475,10 +562,10 @@ export default async function MaterialCostsPage({
       />
       <Card>
         <CardHeader>
-          <CardTitle>Entradas y costos del mes</CardTitle>
+          <CardTitle>HISTORIAL DE ENTRADAS Y COSTOS · {historyPeriod}</CardTitle>
           <div>
             <CostExport
-              month={month}
+              month={historyPeriod}
               rows={filtered.map((m) => {
                 const c = prices.get(m.id),
                   material = materials.find((a) => a.id === m.material_id);
@@ -514,6 +601,7 @@ export default async function MaterialCostsPage({
                 <TableHead>Material / documento</TableHead>
                 <TableHead>Cantidad</TableHead>
                 <TableHead>Proveedor</TableHead>
+                <TableHead>PRECIO / UNIDAD COP</TableHead>
                 <TableHead>Total COP</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead />
@@ -538,6 +626,7 @@ export default async function MaterialCostsPage({
                       {amount(m.quantity)} {material?.unit_of_measure}
                     </TableCell>
                     <TableCell>{cost?.supplier ?? "Pendiente"}</TableCell>
+                    <TableCell>{formatCop(cost ? cost.total_cop / m.quantity : null)} / {material?.unit_of_measure}</TableCell>
                     <TableCell>{formatCop(cost?.total_cop ?? null)}</TableCell>
                     <TableCell>
                       <Badge variant={!cost ? "destructive" : "secondary"}>
@@ -562,7 +651,7 @@ export default async function MaterialCostsPage({
               {!filtered.length && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center text-muted-foreground"
                   >
                     Sin entradas para estos filtros.

@@ -12,9 +12,7 @@ export default async function PurchasePage() {
         {error}
       </p>
     );
-  const materials = snapshot.materials
-    .filter((m) => m.active)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const materials = snapshot.materials.filter((m) => m.active);
   const locations = snapshot.locations.filter(
     (l) => l.active && ["bodega", "piso"].includes(l.type),
   );

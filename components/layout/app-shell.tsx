@@ -43,6 +43,8 @@ function setCollapsedStorage(value: boolean) {
 const NAV_ITEMS: (NavItem & { roles: Role[] })[] = [
   { href: "/", label: "Panel", icon: LayoutDashboard, roles: ["operario", "supervisor", "admin"] },
   { href: "/planta", label: "Planta", icon: Truck, roles: ["operario"] },
+  { href: "/produccion", label: "Producción · revisión", icon: Factory, roles: ["operario", "supervisor", "admin"] },
+  { href: "/revision", label: "Revisión de cambios", icon: LayoutDashboard, roles: ["supervisor", "admin"] },
   {
     href: "/inventario",
     label: "Inventario",

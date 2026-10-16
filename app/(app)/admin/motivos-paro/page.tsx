@@ -19,7 +19,7 @@ export default async function MotivosParoAdminPage() {
       <DowntimeReasonForm />
       <Card>
         <CardHeader>
-          <CardTitle>Motivos de paro ({reasons?.length ?? 0})</CardTitle>
+          <CardTitle>Motivos de paro ({(reasons?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

@@ -1,3 +1,4 @@
+import { materialName, compareMaterials } from "@/lib/materials/catalog";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +95,7 @@ export default async function MaterialBehaviorPage({
     totalsByMaterial.set(movement.material_id, totals);
   }
 
-  const rows = (materials ?? []).map((material) => {
+  const rows = (materials ?? []).sort(compareMaterials).map((material) => {
     const totals = totalsByMaterial.get(material.id) ?? {
       entries: 0,
       consumed: 0,
@@ -119,7 +120,7 @@ export default async function MaterialBehaviorPage({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 uppercase">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Comportamiento de materias primas</h1>
@@ -204,7 +205,7 @@ export default async function MaterialBehaviorPage({
                         href={`/inventario/materia-prima/${row.id}`}
                         className="font-medium text-primary hover:underline"
                       >
-                        {row.name}
+                        {materialName(row)}
                       </Link>
                       <div className="text-xs text-muted-foreground">{row.code}</div>
                     </TableCell>

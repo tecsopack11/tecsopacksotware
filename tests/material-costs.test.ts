@@ -198,3 +198,25 @@ test("same transaction entry and exit follow insertion sequence, not random UUID
   assert.equal(b.issue, false);
   assert.equal(b.value, 50);
 });
+
+test("annual purchases weight quantity across months, with no receipt count cap", () => {
+  const purchases = Array.from({ length: 1500 }, (_, index) => ({
+    quantity: index % 2 === 0 ? 100 : 300,
+    total: index % 2 === 0 ? 500000 : 1200000,
+  }));
+  const result = weightedPurchaseAverage(purchases);
+  assert.equal(result.quantity, 300000);
+  assert.equal(result.total, 1275000000);
+  assert.equal(result.average, 4250);
+  assert.equal(result.pending, 0);
+});
+
+test("annual average retains all unpriced receipts as pending, never zero cost", () => {
+  const result = weightedPurchaseAverage([
+    { quantity: 100, total: null },
+    { quantity: 300, total: null },
+  ]);
+  assert.equal(result.average, null);
+  assert.equal(result.quantity, 0);
+  assert.equal(result.pending, 2);
+});

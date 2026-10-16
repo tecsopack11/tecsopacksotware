@@ -27,7 +27,7 @@ export default async function UbicacionesAdminPage() {
       <LocationForm />
       <Card>
         <CardHeader>
-          <CardTitle>Ubicaciones ({locations?.length ?? 0})</CardTitle>
+          <CardTitle>Ubicaciones ({(locations?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

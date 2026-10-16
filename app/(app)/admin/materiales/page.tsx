@@ -1,3 +1,4 @@
+import { compareMaterials, materialName, materialType, matchesMaterial, MATERIAL_TYPES } from "@/lib/materials/catalog";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/get-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,9 @@ import { CatalogDeleteButton } from "@/components/admin/catalog-delete-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function MaterialesAdminPage() {
+export default async function MaterialesAdminPage({ searchParams }: { searchParams: Promise<{ q?: string; tipo?: string; categoria?: string }> }) {
+  const { q = "", tipo, categoria } = await searchParams;
+  const activeType = MATERIAL_TYPES.find((value) => value === tipo) ?? null;
   const supabase = await createClient();
   const session = await getProfile();
   const canDelete = session?.profile.is_super_admin === true;
@@ -24,12 +27,33 @@ export default async function MaterialesAdminPage() {
     solvente: "Solventes",
   };
 
+  const filteredMaterials = (materials ?? []).filter((m) => matchesMaterial(m, q, activeType) && (!categoria || m.category === categoria)).sort(compareMaterials);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 uppercase">
       <MaterialForm />
+      <form action="/admin/materiales" className="flex flex-wrap items-end gap-3">
+        <label className="grid gap-1 text-sm">BUSCAR MATERIAL O CÓDIGO
+          <input name="q" defaultValue={q} className="h-9 rounded-md border bg-background px-3 uppercase" />
+        </label>
+        <label className="grid gap-1 text-sm">TIPO
+          <select name="tipo" defaultValue={activeType ?? ""} className="h-9 rounded-md border bg-background px-3">
+            <option value="">TODOS</option>
+            {MATERIAL_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">CATEGORÍA
+          <select name="categoria" defaultValue={categoria ?? ""} className="h-9 rounded-md border bg-background px-3">
+            <option value="">TODAS</option>
+            {Object.entries(CATEGORY_LABEL).map(([key, label]) => <option key={key} value={key}>{label.toUpperCase()}</option>)}
+          </select>
+        </label>
+        <button type="submit" className="h-9 rounded-md border px-4">FILTRAR</button>
+        <a href="/admin/materiales" className="px-3 py-2 text-sm underline">LIMPIAR</a>
+      </form>
       <Card>
         <CardHeader>
-          <CardTitle>Materiales ({materials?.length ?? 0})</CardTitle>
+          <CardTitle>Materiales ({filteredMaterials.length.toLocaleString("es-CO")} / {(materials?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -45,19 +69,20 @@ export default async function MaterialesAdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(materials ?? []).map((m) => (
+              {filteredMaterials.length === 0 && <TableRow><TableCell colSpan={canDelete ? 7 : 6} className="text-center text-muted-foreground">NO HAY MATERIALES QUE COINCIDAN CON LOS FILTROS.</TableCell></TableRow>}
+              {filteredMaterials.map((m) => (
                 <TableRow key={m.id}>
                   <TableCell>{m.code}</TableCell>
-                  <TableCell>{m.name}</TableCell>
+                  <TableCell>{materialName(m)}</TableCell>
                   <TableCell>{CATEGORY_LABEL[m.category] ?? m.category}</TableCell>
-                  <TableCell>{m.material_type}</TableCell>
+                  <TableCell>{materialType(m)}</TableCell>
                   <TableCell>{m.unit_of_measure}</TableCell>
-                  <TableCell className="text-right">{m.min_stock}</TableCell>
+                  <TableCell className="text-right">{Number(m.min_stock).toLocaleString("es-CO")}</TableCell>
                   {canDelete && (
                     <TableCell className="text-right">
                       <CatalogDeleteButton
                         id={m.id}
-                        name={`${m.code} — ${m.name}`}
+                        name={`${m.code} — ${materialName(m)}`}
                         kind="material"
                       />
                     </TableCell>

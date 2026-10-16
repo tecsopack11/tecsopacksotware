@@ -17,7 +17,7 @@ export default async function MaquinasAdminPage() {
       <MachineForm />
       <Card>
         <CardHeader>
-          <CardTitle>Máquinas ({machines?.length ?? 0})</CardTitle>
+          <CardTitle>Máquinas ({(machines?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

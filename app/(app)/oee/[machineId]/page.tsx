@@ -120,7 +120,7 @@ export default async function MachineOeePage({
               <div key={name} className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span>{name}</span>
-                  <span className="text-muted-foreground">{Math.round(seconds / 60)} min</span>
+                  <span className="text-muted-foreground">{Math.round(seconds / 60).toLocaleString("es-CO")} min</span>
                 </div>
                 <div className="h-2 rounded-full bg-secondary">
                   <div className="h-2 rounded-full bg-primary" style={{ width: `${pct}%` }} />

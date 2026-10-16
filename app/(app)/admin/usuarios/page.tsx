@@ -20,7 +20,7 @@ export default async function UsuariosAdminPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Usuarios ({profiles?.length ?? 0})</CardTitle>
+        <CardTitle>Usuarios ({(profiles?.length ?? 0).toLocaleString("es-CO")})</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>

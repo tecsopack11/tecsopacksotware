@@ -63,7 +63,7 @@ export function ProductoSalidaForm({ stockLines }: { stockLines: ProductStockLin
             </Select>
             {selected && (
               <p className="text-xs text-muted-foreground">
-                Disponible: {selected.quantity.toLocaleString("es-CL")} {selected.unit}
+                Disponible: {selected.quantity.toLocaleString("es-CO")} {selected.unit}
               </p>
             )}
           </div>

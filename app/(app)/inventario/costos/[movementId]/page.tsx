@@ -7,6 +7,9 @@ import { formatCop } from "@/lib/costs/calculations";
 import { CostForm } from "@/components/costos/cost-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+const amount = (value: number) =>
+  Number(value).toLocaleString("es-CO", { maximumFractionDigits: 6 });
+
 export const dynamic = "force-dynamic";
 export default async function CostEntryPage({
   params,
@@ -109,9 +112,9 @@ export default async function CostEntryPage({
                   {h.supplier} · {h.invoice} · {h.shipment || "Sin contenedor"}
                 </p>
                 <p>
-                  Precio: {h.unit_price} {h.currency} /{" "}
-                  {material?.unit_of_measure} · Tasa: {h.exchange_rate} ·
-                  Descuento: {h.discount} {h.currency}
+                  Precio: {amount(h.unit_price)} {h.currency} /{" "}
+                  {material?.unit_of_measure} · Tasa: {amount(h.exchange_rate)} ·
+                  Descuento: {amount(h.discount)} {h.currency}
                 </p>
                 <p>
                   Flete: {formatCop(h.freight)} · Seguro:{" "}
